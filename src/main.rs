@@ -155,19 +155,39 @@ fn main() {
 
             process_image::process_image! {
                 pub struct mut PiOutputs: 5 {
-                    pub seg01: (X, 0, 0),   // %QX1.2
-                    pub seg02: (X, 0, 1),   // %QX1.2
-                    pub seg03: (X, 0, 2),   // %QX1.2
-                    pub seg04: (X, 0, 3),   // %QX1.2
-                    pub seg05: (X, 1, 0),   // %QX1.2
-                    pub seg06: (X, 1, 1),   // %QX1.2
+                    pub bottom_f: (X, 0, 0),   // %QX1.2
+                    pub bottom_b: (X, 0, 1),   // %QX1.2
+                    pub eye: (X, 0, 2),   // %QX1.2
+                    pub mouth_mid: (X, 0, 3),   // %QX1.2
+                    pub mouth_bot: (X, 1, 0),   // %QX1.2
+                    pub mouth_top: (X, 1, 1),   // %QX1.2
+                    pub pupil_down: (X, 1, 2),   // %QX1.2
+                    pub pupil_top: (X, 1, 3),   // %QX1.2
+                    pub spikes_left: (X, 2, 0),   // %QX1.2
+                    pub spikes_mid: (X, 2, 1),   // %QX1.2
+                    pub spikes_right: (X, 2, 2),   // %QX1.2
                 }
             }
 
             let mut pi_q = PiOutputs::try_from(pi_q).unwrap();
 
-            *pi_q.seg05() = true;
+            *pi_q.bottom_f() = true;
+            *pi_q.bottom_b() = true;
+            *pi_q.eye() = true;
+            *pi_q.mouth_mid() = true;
+            *pi_q.spikes_left() = true;
+            *pi_q.spikes_right() = true;
+            *pi_q.spikes_mid() = true;
 
+            let elapsed = (now - start).total_millis();
+
+            if (usize::try_from(elapsed / 1000).unwrap() % 2) == 1 {
+                *pi_q.mouth_top() = true;
+                *pi_q.pupil_top() = true;
+            } else {
+                *pi_q.mouth_bot() = true;
+                *pi_q.pupil_down() = true;
+            }
             // Set outputs according to our best intentions
             // let elapsed = (now - start).total_millis();
             // let i = usize::try_from(elapsed / 100).unwrap() % (16);
