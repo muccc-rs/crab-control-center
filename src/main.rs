@@ -157,7 +157,7 @@ fn main() {
             let elapsed = (now - start).total_millis();
             let i = usize::try_from(elapsed / 100).unwrap() % (16);
             let pi_q = remoteio.pi_q_mut();
-            pi_q.fill(0xff);
+            pi_q.fill(0x00);
             pi_q[i / 4] |= 1 << (i % 4);
         }
 
