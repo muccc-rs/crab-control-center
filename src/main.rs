@@ -139,7 +139,7 @@ fn main() {
             // println!("Inputs: {:?}", remoteio.pi_i());
                 let (pi_i, pi_q) = remoteio.pi_both();
                 let dc_ok = process_image::tag!(pi_i, X, 0, 0);
-                let pressure = pi_i[1] << 8 + pi_i[2];
+                let pressure = (pi_i[1] << 8) + pi_i[2];
 
                 println!("DC OK: {dc_ok} PRESSURE: {pressure}");
 
