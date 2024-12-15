@@ -137,7 +137,6 @@ fn main() {
 
         if remoteio.is_running() && events.cycle_completed {
             // println!("Inputs: {:?}", remoteio.pi_i());
-            {
                 let (pi_i, pi_q) = remoteio.pi_both();
                 let dc_ok = process_image::tag!(pi_i, X, 0, 0);
                 let pressure = pi_i[1] << 8 + pi_i[2];
@@ -149,16 +148,32 @@ fn main() {
                     *refill_indicator = true;
                 }
 
+                {
                 let mut fault_indicator = process_image::tag_mut!(pi_q, X, 4, 0);
                 *fault_indicator = true;
             }
 
+            process_image::process_image! {
+                pub struct mut PiOutputs: 5 {
+                    pub seg01: (X, 0, 0),   // %QX1.2
+                    pub seg02: (X, 0, 1),   // %QX1.2
+                    pub seg03: (X, 0, 2),   // %QX1.2
+                    pub seg04: (X, 0, 3),   // %QX1.2
+                    pub seg05: (X, 1, 0),   // %QX1.2
+                    pub seg06: (X, 1, 1),   // %QX1.2
+                }
+            }
+
+            let mut pi_q = PiOutputs::try_from(pi_q).unwrap();
+
+            *pi_q.seg05() = true;
+
             // Set outputs according to our best intentions
-            let elapsed = (now - start).total_millis();
-            let i = usize::try_from(elapsed / 100).unwrap() % (16);
-            let pi_q = remoteio.pi_q_mut();
-            pi_q.fill(0x00);
-            pi_q[i / 4] |= 1 << (i % 4);
+            // let elapsed = (now - start).total_millis();
+            // let i = usize::try_from(elapsed / 100).unwrap() % (16);
+            // let pi_q = remoteio.pi_q_mut();
+            // pi_q.fill(0x00);
+            // pi_q[i / 4] |= 1 << (i % 4);
         }
 
         std::thread::sleep(sleep_time);
