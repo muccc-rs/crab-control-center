@@ -155,20 +155,31 @@ fn main() {
 
             process_image::process_image! {
                 pub struct mut PiOutputs: 5 {
-                    pub bottom_f: (X, 0, 0),   // %QX1.2
-                    pub bottom_b: (X, 0, 1),   // %QX1.2
-                    pub eye: (X, 0, 2),   // %QX1.2
-                    pub mouth_mid: (X, 0, 3),   // %QX1.2
-                    pub mouth_bot: (X, 1, 0),   // %QX1.2
-                    pub mouth_top: (X, 1, 1),   // %QX1.2
-                    pub pupil_down: (X, 1, 2),   // %QX1.2
-                    pub pupil_top: (X, 1, 3),   // %QX1.2
-                    pub spikes_left: (X, 2, 0),   // %QX1.2
-                    pub spikes_mid: (X, 2, 1),   // %QX1.2
-                    pub spikes_right: (X, 2, 2),   // %QX1.2
+                    /// -KEC1-K1 DO1
+                    pub bottom_f: (X, 0, 0),
+                    /// -KEC1-K1 DO2
+                    pub bottom_b: (X, 0, 1),
+                    /// -KEC1-K2 DO1
+                    pub eye: (X, 1, 0),
+                    /// -KEC1-K2 DO2
+                    pub mouth_mid: (X, 1, 1),
+                    /// -KEC1-K2 DO3
+                    pub mouth_bot: (X, 1, 2),
+                    /// -KEC1-K2 DO4
+                    pub mouth_top: (X, 1, 3),
+                    /// -KEC1-K1 DO3
+                    pub pupil_down: (X, 0, 2),
+                    /// -KEC1-K1 DO4
+                    pub pupil_top: (X, 0, 3),
+                    /// -KEC1-K3 DO1
+                    pub spikes_left: (X, 2, 0),
+                    /// -KEC1-K3 DO2
+                    pub spikes_mid: (X, 2, 1),
+                    /// -KEC1-K3 DO3
+                    pub spikes_right: (X, 2, 2),
 
-                    pub ind_no_fault: (X, 4, 0),   // %QX1.2
-                    pub ind_air_refill: (X, 4, 1),   // %QX1.2
+                    pub ind_no_fault: (X, 4, 0),
+                    pub ind_air_refill: (X, 4, 1),
                 }
             }
 
