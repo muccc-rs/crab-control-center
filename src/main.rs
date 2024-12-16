@@ -139,7 +139,7 @@ fn main() {
             // println!("Inputs: {:?}", remoteio.pi_i());
                 let (pi_i, pi_q) = remoteio.pi_both();
                 let dc_ok = process_image::tag!(pi_i, X, 0, 0);
-                let pressure = (pi_i[1] << 8) + pi_i[2];
+                let pressure = (u32::from(pi_i[1]) << 8) + u32::from(pi_i[2]);
 
                 println!("DC OK: {dc_ok} PRESSURE: {pressure}");
 
@@ -166,27 +166,52 @@ fn main() {
                     pub spikes_left: (X, 2, 0),   // %QX1.2
                     pub spikes_mid: (X, 2, 1),   // %QX1.2
                     pub spikes_right: (X, 2, 2),   // %QX1.2
+
+                    pub ind_no_fault: (X, 4, 0),   // %QX1.2
+                    pub ind_air_refill: (X, 4, 1),   // %QX1.2
                 }
             }
+
+            pi_q.fill(0x00);
 
             let mut pi_q = PiOutputs::try_from(pi_q).unwrap();
 
             *pi_q.bottom_f() = true;
             *pi_q.bottom_b() = true;
             *pi_q.eye() = true;
-            *pi_q.mouth_mid() = true;
-            *pi_q.spikes_left() = true;
-            *pi_q.spikes_right() = true;
+            *pi_q.ind_no_fault() = true;
+
             *pi_q.spikes_mid() = true;
+            *pi_q.spikes_right() = true;
+            *pi_q.spikes_left() = true;
 
             let elapsed = (now - start).total_millis();
 
-            if (usize::try_from(elapsed / 1000).unwrap() % 2) == 1 {
-                *pi_q.mouth_top() = true;
-                *pi_q.pupil_top() = true;
-            } else {
-                *pi_q.mouth_bot() = true;
+            let i = usize::try_from(elapsed / 100).unwrap() % 3;
+            match i {
+                0 => {
+                    *pi_q.spikes_mid() = true;
+                }
+                1 => {
+                    *pi_q.spikes_right() = true;
+                }
+                2 => {
+                    *pi_q.spikes_left() = true;
+                }
+                _ => (),
+            }
+
+            if (usize::try_from(elapsed / 2000).unwrap() % 2) == 1 {
                 *pi_q.pupil_down() = true;
+                *pi_q.mouth_mid() = false;
+                *pi_q.mouth_top() = true;
+                *pi_q.mouth_bot() = false;
+                *pi_q.ind_air_refill() = true;
+            } else {
+                *pi_q.pupil_top() = true;
+                *pi_q.mouth_mid() = true;
+                *pi_q.mouth_top() = false;
+                *pi_q.mouth_bot() = true;
             }
             // Set outputs according to our best intentions
             // let elapsed = (now - start).total_millis();
