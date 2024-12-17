@@ -42,28 +42,28 @@ fn main() {
         //   - Restart on K-Bus Failure.......: POWER ON RESET
         //   - Device Diagnosis...............: enabled
         //   - Process Data Representation....: MOTOROLA (MSB-LSB)
-        //   - Response to PROFIBUS DP Failure: Substitude Values are switched
+        //   - Response to PROFIBUS DP Failure: Output image is cleared
         //   - Response to K-Bus Failure......: PROFIBUS communication stops
         //
         // Selected Modules:
         //   [0] 750-343 No PI Channel
         //   [1] 750-504  4 DO/24 V DC/0.5 A
         //       - Terminal is physically....: plugged
-        //       - Substitude Value Channel 1: 1
-        //       - Substitude Value Channel 2: 1
+        //       - Substitude Value Channel 1: 0
+        //       - Substitude Value Channel 2: 0
         //       - Substitude Value Channel 3: 0
-        //       - Substitude Value Channel 4: 1
+        //       - Substitude Value Channel 4: 0
         //   [2] 750-504  4 DO/24 V DC/0.5 A
         //       - Terminal is physically....: plugged
-        //       - Substitude Value Channel 1: 1
-        //       - Substitude Value Channel 2: 1
-        //       - Substitude Value Channel 3: 1
+        //       - Substitude Value Channel 1: 0
+        //       - Substitude Value Channel 2: 0
+        //       - Substitude Value Channel 3: 0
         //       - Substitude Value Channel 4: 0
         //   [3] 750-504  4 DO/24 V DC/0.5 A
         //       - Terminal is physically....: plugged
-        //       - Substitude Value Channel 1: 1
-        //       - Substitude Value Channel 2: 1
-        //       - Substitude Value Channel 3: 1
+        //       - Substitude Value Channel 1: 0
+        //       - Substitude Value Channel 2: 0
+        //       - Substitude Value Channel 3: 0
         //       - Substitude Value Channel 4: 0
         //   [4] 750-504  4 DO/24 V DC/0.5 A
         //       - Terminal is physically....: plugged
@@ -85,8 +85,8 @@ fn main() {
         //       - Diagnosis Channel 2...: disabled
         user_parameters: Some(&[
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xc3, 0x00, 0x00, 0x00, 0x00,
-            0x01, 0x00, 0x00, 0x00, 0x00, 0x80, 0x2b, 0x00, 0x21, 0x02, 0x0b, 0x21, 0x02, 0x07,
-            0x21, 0x02, 0x07, 0x21, 0x02, 0x00, 0x21, 0x02, 0x00, 0x21, 0x01, 0x00, 0x24, 0x50,
+            0x01, 0x00, 0x00, 0x00, 0x00, 0x80, 0x2b, 0x00, 0x21, 0x02, 0x00, 0x21, 0x02, 0x00,
+            0x21, 0x02, 0x00, 0x21, 0x02, 0x00, 0x21, 0x02, 0x00, 0x21, 0x01, 0x00, 0x24, 0x50,
             0x11, 0x06,
         ]),
         config: Some(&[0x00, 0x20, 0x20, 0x20, 0x20, 0x20, 0x10, 0x51]),
