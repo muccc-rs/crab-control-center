@@ -8,17 +8,17 @@ const IO_STATION_ADDRESS: u8 = 8;
 // Bus Parameters
 const MASTER_ADDRESS: u8 = 3;
 const BUS_DEVICE: &'static str = "/dev/ttyUSB0";
-const BAUDRATE: profirust::Baudrate = profirust::Baudrate::B500000;
+const BAUDRATE: profirust::Baudrate = profirust::Baudrate::B19200;
 
 fn bus_parameters() -> (fdl::ParametersBuilder, std::time::Duration) {
     let mut parameters = fdl::ParametersBuilder::new(MASTER_ADDRESS, BAUDRATE);
     parameters
         // We use a rather large T_slot time because USB-RS485 converters
         // can induce large delays at times.
-        .slot_bits(2500)
+        .slot_bits(960)
         .watchdog_timeout(profirust::time::Duration::from_secs(2));
 
-    let sleep_time = std::time::Duration::from_micros(3500);
+    let sleep_time = std::time::Duration::from_millis(10);
 
     (parameters, sleep_time)
 }
