@@ -29,28 +29,28 @@ fn main() {
         //   - Restart on K-Bus Failure.......: POWER ON RESET
         //   - Device Diagnosis...............: enabled
         //   - Process Data Representation....: MOTOROLA (MSB-LSB)
-        //   - Response to PROFIBUS DP Failure: Output image is cleared
+        //   - Response to PROFIBUS DP Failure: Substitude Values are switched
         //   - Response to K-Bus Failure......: PROFIBUS communication stops
         //
         // Selected Modules:
         //   [0] 750-343 No PI Channel
         //   [1] 750-504  4 DO/24 V DC/0.5 A
         //       - Terminal is physically....: plugged
-        //       - Substitude Value Channel 1: 0
-        //       - Substitude Value Channel 2: 0
+        //       - Substitude Value Channel 1: 1
+        //       - Substitude Value Channel 2: 1
         //       - Substitude Value Channel 3: 0
-        //       - Substitude Value Channel 4: 0
+        //       - Substitude Value Channel 4: 1
         //   [2] 750-504  4 DO/24 V DC/0.5 A
         //       - Terminal is physically....: plugged
-        //       - Substitude Value Channel 1: 0
-        //       - Substitude Value Channel 2: 0
-        //       - Substitude Value Channel 3: 0
+        //       - Substitude Value Channel 1: 1
+        //       - Substitude Value Channel 2: 1
+        //       - Substitude Value Channel 3: 1
         //       - Substitude Value Channel 4: 0
         //   [3] 750-504  4 DO/24 V DC/0.5 A
         //       - Terminal is physically....: plugged
-        //       - Substitude Value Channel 1: 0
-        //       - Substitude Value Channel 2: 0
-        //       - Substitude Value Channel 3: 0
+        //       - Substitude Value Channel 1: 1
+        //       - Substitude Value Channel 2: 1
+        //       - Substitude Value Channel 3: 1
         //       - Substitude Value Channel 4: 0
         //   [4] 750-504  4 DO/24 V DC/0.5 A
         //       - Terminal is physically....: plugged
@@ -69,14 +69,9 @@ fn main() {
         //   [7] 750-466  2 AI/4-20 mA/SE
         //       - Terminal is physically: plugged
         //       - Diagnosis Channel 1...: enabled
-        //       - Diagnosis Channel 2...: enabled
-        user_parameters: Some(&[
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xc3, 0x00, 0x00, 0x00, 0x00,
-            0x01, 0x00, 0x00, 0x00, 0x00, 0x80, 0x2b, 0x00, 0x21, 0x02, 0x00, 0x21, 0x02, 0x00,
-            0x21, 0x02, 0x00, 0x21, 0x02, 0x00, 0x21, 0x02, 0x00, 0x21, 0x01, 0x00, 0x2c, 0x50,
-            0x11, 0x06,
-        ]),
-        config: Some(&[0x00, 0x20, 0x20, 0x20, 0x20, 0x20, 0x10, 0x51]),
+        //       - Diagnosis Channel 2...: disabled
+        user_parameters: Some(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xc3, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x80, 0x2b, 0x00, 0x21, 0x02, 0x0b, 0x21, 0x02, 0x07, 0x21, 0x02, 0x07, 0x21, 0x02, 0x00, 0x21, 0x02, 0x00, 0x21, 0x01, 0x00, 0x24, 0x50, 0x11, 0x06, ]),
+        config: Some(&[0x00, 0x20, 0x20, 0x20, 0x20, 0x20, 0x10, 0x51, ]),
 
         // Set max_tsdr depending on baudrate and assert
         // that a supported baudrate is used.
@@ -159,6 +154,10 @@ fn main() {
                     pub bottom_f: (X, 0, 0),
                     /// -KEC1-K1 DO2
                     pub bottom_b: (X, 0, 1),
+                    /// -KEC1-K1 DO3
+                    pub pupil_down: (X, 0, 2),
+                    /// -KEC1-K1 DO4
+                    pub pupil_top: (X, 0, 3),
                     /// -KEC1-K2 DO1
                     pub eye: (X, 1, 0),
                     /// -KEC1-K2 DO2
@@ -167,10 +166,6 @@ fn main() {
                     pub mouth_bot: (X, 1, 2),
                     /// -KEC1-K2 DO4
                     pub mouth_top: (X, 1, 3),
-                    /// -KEC1-K1 DO3
-                    pub pupil_down: (X, 0, 2),
-                    /// -KEC1-K1 DO4
-                    pub pupil_top: (X, 0, 3),
                     /// -KEC1-K3 DO1
                     pub spikes_left: (X, 2, 0),
                     /// -KEC1-K3 DO2
