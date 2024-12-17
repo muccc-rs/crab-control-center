@@ -205,38 +205,16 @@ fn main() {
 
             let elapsed = (now - start).total_millis();
 
-            let i = usize::try_from(elapsed / 100).unwrap() % 3;
-            match i {
-                0 => {
-                    *pi_q.spikes_mid() = true;
-                }
-                1 => {
-                    *pi_q.spikes_right() = true;
-                }
-                2 => {
-                    *pi_q.spikes_left() = true;
-                }
-                _ => (),
-            }
-
             if (usize::try_from(elapsed / 2000).unwrap() % 2) == 1 {
+                // Sad
                 *pi_q.pupil_down() = true;
-                *pi_q.mouth_mid() = false;
                 *pi_q.mouth_top() = true;
-                *pi_q.mouth_bot() = false;
-                *pi_q.ind_air_refill() = true;
             } else {
+                // Happy
                 *pi_q.pupil_top() = true;
                 *pi_q.mouth_mid() = true;
-                *pi_q.mouth_top() = false;
                 *pi_q.mouth_bot() = true;
             }
-            // Set outputs according to our best intentions
-            // let elapsed = (now - start).total_millis();
-            // let i = usize::try_from(elapsed / 100).unwrap() % (16);
-            // let pi_q = remoteio.pi_q_mut();
-            // pi_q.fill(0x00);
-            // pi_q[i / 4] |= 1 << (i % 4);
         }
 
         std::thread::sleep(sleep_time);
