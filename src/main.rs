@@ -150,16 +150,6 @@ fn main() {
 
             println!("DC OK: {dc_ok} PRESSURE: {pressure}");
 
-            {
-                let mut refill_indicator = process_image::tag_mut!(pi_q, X, 4, 1);
-                *refill_indicator = true;
-            }
-
-            {
-                let mut fault_indicator = process_image::tag_mut!(pi_q, X, 4, 0);
-                *fault_indicator = true;
-            }
-
             process_image::process_image! {
                 pub struct mut PiOutputs: 5 {
                     /// -KEC1-K1 DO1
@@ -194,26 +184,30 @@ fn main() {
 
             let mut pi_q = PiOutputs::try_from(pi_q).unwrap();
 
-            *pi_q.bottom_f() = true;
-            *pi_q.bottom_b() = true;
-            *pi_q.eye() = true;
-            *pi_q.ind_no_fault() = true;
+            // Only set outputs when DC 5V supply is okay
+            if dc_ok {
+                *pi_q.ind_no_fault() = true;
 
-            *pi_q.spikes_mid() = true;
-            *pi_q.spikes_right() = true;
-            *pi_q.spikes_left() = true;
+                *pi_q.bottom_f() = true;
+                *pi_q.bottom_b() = true;
+                *pi_q.eye() = true;
 
-            let elapsed = (now - start).total_millis();
+                *pi_q.spikes_mid() = true;
+                *pi_q.spikes_right() = true;
+                *pi_q.spikes_left() = true;
 
-            if (usize::try_from(elapsed / 2000).unwrap() % 2) == 1 {
-                // Sad
-                *pi_q.pupil_down() = true;
-                *pi_q.mouth_top() = true;
-            } else {
-                // Happy
-                *pi_q.pupil_top() = true;
-                *pi_q.mouth_mid() = true;
-                *pi_q.mouth_bot() = true;
+                let elapsed = (now - start).total_millis();
+
+                if (usize::try_from(elapsed / 2000).unwrap() % 2) == 1 {
+                    // Sad
+                    *pi_q.pupil_down() = true;
+                    *pi_q.mouth_top() = true;
+                } else {
+                    // Happy
+                    *pi_q.pupil_top() = true;
+                    *pi_q.mouth_mid() = true;
+                    *pi_q.mouth_bot() = true;
+                }
             }
         }
 
