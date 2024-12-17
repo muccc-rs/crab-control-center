@@ -18,7 +18,7 @@ fn bus_parameters() -> (fdl::ParametersBuilder, std::time::Duration) {
         .slot_bits(576)
         .watchdog_timeout(profirust::time::Duration::from_secs(10));
 
-    let sleep_time = std::time::Duration::from_millis(10);
+    let sleep_time = std::time::Duration::from_millis(60);
 
     (parameters, sleep_time)
 }
