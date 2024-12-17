@@ -10,6 +10,19 @@ const MASTER_ADDRESS: u8 = 3;
 const BUS_DEVICE: &'static str = "/dev/ttyUSB0";
 const BAUDRATE: profirust::Baudrate = profirust::Baudrate::B500000;
 
+fn bus_parameters() -> (fdl::ParametersBuilder, std::time::Duration) {
+    let mut parameters = fdl::ParametersBuilder::new(MASTER_ADDRESS, BAUDRATE);
+    parameters
+        // We use a rather large T_slot time because USB-RS485 converters
+        // can induce large delays at times.
+        .slot_bits(2500)
+        .watchdog_timeout(profirust::time::Duration::from_secs(2));
+
+    let sleep_time = std::time::Duration::from_micros(3500);
+
+    (parameters, sleep_time)
+}
+
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_micros()
@@ -109,15 +122,9 @@ fn main() {
         .with_diag_buffer(&mut buffer_diagnostics[..]),
     );
 
-    let mut fdl = fdl::FdlActiveStation::new(
-        fdl::ParametersBuilder::new(MASTER_ADDRESS, BAUDRATE)
-            // We use a rather large T_slot time because USB-RS485 converters
-            // can induce large delays at times.
-            .slot_bits(2500)
-            .watchdog_timeout(profirust::time::Duration::from_secs(2))
-            .build_verified(&dp_master),
-    );
-    let sleep_time = std::time::Duration::from_micros(3500);
+    let (parameters, sleep_time) = bus_parameters();
+
+    let mut fdl = fdl::FdlActiveStation::new(parameters.build_verified(&dp_master));
 
     println!("Connecting to the bus...");
     let mut phy = phy::SerialPortPhy::new(BUS_DEVICE, fdl.parameters().baudrate);
