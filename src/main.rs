@@ -15,8 +15,8 @@ fn bus_parameters() -> (fdl::ParametersBuilder, std::time::Duration) {
     parameters
         // We use a rather large T_slot time because USB-RS485 converters
         // can induce large delays at times.
-        .slot_bits(960)
-        .watchdog_timeout(profirust::time::Duration::from_secs(2));
+        .slot_bits(576)
+        .watchdog_timeout(profirust::time::Duration::from_secs(10));
 
     let sleep_time = std::time::Duration::from_millis(10);
 
