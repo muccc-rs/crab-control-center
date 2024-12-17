@@ -70,8 +70,13 @@ fn main() {
         //       - Terminal is physically: plugged
         //       - Diagnosis Channel 1...: enabled
         //       - Diagnosis Channel 2...: disabled
-        user_parameters: Some(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xc3, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x80, 0x2b, 0x00, 0x21, 0x02, 0x0b, 0x21, 0x02, 0x07, 0x21, 0x02, 0x07, 0x21, 0x02, 0x00, 0x21, 0x02, 0x00, 0x21, 0x01, 0x00, 0x24, 0x50, 0x11, 0x06, ]),
-        config: Some(&[0x00, 0x20, 0x20, 0x20, 0x20, 0x20, 0x10, 0x51, ]),
+        user_parameters: Some(&[
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xc3, 0x00, 0x00, 0x00, 0x00,
+            0x01, 0x00, 0x00, 0x00, 0x00, 0x80, 0x2b, 0x00, 0x21, 0x02, 0x0b, 0x21, 0x02, 0x07,
+            0x21, 0x02, 0x07, 0x21, 0x02, 0x00, 0x21, 0x02, 0x00, 0x21, 0x01, 0x00, 0x24, 0x50,
+            0x11, 0x06,
+        ]),
+        config: Some(&[0x00, 0x20, 0x20, 0x20, 0x20, 0x20, 0x10, 0x51]),
 
         // Set max_tsdr depending on baudrate and assert
         // that a supported baudrate is used.
@@ -132,18 +137,18 @@ fn main() {
 
         if remoteio.is_running() && events.cycle_completed {
             // println!("Inputs: {:?}", remoteio.pi_i());
-                let (pi_i, pi_q) = remoteio.pi_both();
-                let dc_ok = process_image::tag!(pi_i, X, 0, 0);
-                let pressure = (u32::from(pi_i[1]) << 8) + u32::from(pi_i[2]);
+            let (pi_i, pi_q) = remoteio.pi_both();
+            let dc_ok = process_image::tag!(pi_i, X, 0, 0);
+            let pressure = (u32::from(pi_i[1]) << 8) + u32::from(pi_i[2]);
 
-                println!("DC OK: {dc_ok} PRESSURE: {pressure}");
+            println!("DC OK: {dc_ok} PRESSURE: {pressure}");
 
-                {
-                    let mut refill_indicator = process_image::tag_mut!(pi_q, X, 4, 1);
-                    *refill_indicator = true;
-                }
+            {
+                let mut refill_indicator = process_image::tag_mut!(pi_q, X, 4, 1);
+                *refill_indicator = true;
+            }
 
-                {
+            {
                 let mut fault_indicator = process_image::tag_mut!(pi_q, X, 4, 0);
                 *fault_indicator = true;
             }
