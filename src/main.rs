@@ -1,3 +1,4 @@
+#[cfg(feature = "fieldbus")]
 mod fieldbus;
 mod logic;
 mod timers;
@@ -9,6 +10,7 @@ fn main() {
         .format_timestamp_micros()
         .init();
 
+    #[cfg(feature = "fieldbus")]
     let mut fieldbus = if std::env::var("FAKE_CRAB")
         .map(|v| v.parse::<bool>().unwrap())
         .unwrap_or_default()
@@ -22,6 +24,7 @@ fn main() {
     let visuals = visuals::Visuals::new();
     let mut logic = logic::Logic::new();
 
+    #[cfg(feature = "fieldbus")]
     if let Some(fieldbus) = &mut fieldbus {
         fieldbus.enter_state(fieldbus::OperatingState::Operate);
     }
@@ -31,6 +34,7 @@ fn main() {
         let visuals = visuals.clone();
         move || {
             loop {
+                #[cfg(feature = "fieldbus")]
                 if let Some(fieldbus) = &mut fieldbus {
                     fieldbus.with_process_images(|pii, piq| {
                         use process_image::{tag, tag_mut};
