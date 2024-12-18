@@ -53,6 +53,9 @@ pub struct Logic {
 
     blink: bool,
     t_blink: timers::BaseTimer<bool>,
+
+    close_mouth: bool,
+    t_close_mouth: timers::BaseTimer<bool>,
 }
 
 impl Logic {
@@ -72,6 +75,7 @@ impl Logic {
 impl Logic {
     pub fn run(&mut self, now: std::time::Instant) {
         self.t_blink.run(now, self.blink);
+        self.t_close_mouth.run(now, self.close_mouth);
 
         self.out.channels = Channels {
             bottom_front: true,
@@ -90,7 +94,7 @@ impl Logic {
         };
 
         self.blink = match self.blink {
-            false if self.t_blink.timer(now, 2.secs()) => true,
+            false if self.t_blink.timer(now, 3.secs()) => true,
             true if self.t_blink.timer(now, 300.millis()) => false,
             d => d,
         };
@@ -101,6 +105,18 @@ impl Logic {
         } else {
             self.out.channels.pupil_top = true;
             self.out.channels.pupil_down = false;
+        }
+
+        self.close_mouth = match self.close_mouth {
+            false if self.t_close_mouth.timer(now, 10.secs()) => true,
+            true if self.t_close_mouth.timer(now, 2.secs()) => false,
+            d => d,
+        };
+
+        if self.close_mouth {
+            self.out.channels.mouth_top = false;
+            self.out.channels.mouth_bottom = false;
+            self.out.channels.mouth_mid = true;
         }
     }
 }
