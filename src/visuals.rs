@@ -16,7 +16,7 @@ impl Visuals {
         let channels = self.inner.clone();
 
         let options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
+            viewport: egui::ViewportBuilder::default().with_inner_size([960., 540.]),
             ..Default::default()
         };
 
@@ -46,7 +46,44 @@ struct CrabVisualization {
 impl eframe::App for CrabVisualization {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("My egui Application");
+            ui.heading("Crab Visualization");
+            let available_size = ui.available_size();
+            let rect = egui::Rect::from_min_size(ui.min_rect().min, available_size);
+            let channels = self.channels.lock().unwrap();
+            if channels.bottom_back || channels.bottom_front {
+                egui::Image::new(egui::include_image!("../vis/bottom.png")).paint_at(ui, rect);
+            }
+            if channels.spikes_left {
+                egui::Image::new(egui::include_image!("../vis/spikes_left.png")).paint_at(ui, rect);
+            }
+            if channels.spikes_mid {
+                egui::Image::new(egui::include_image!("../vis/spikes_mid.png")).paint_at(ui, rect);
+            }
+            if channels.spikes_right {
+                egui::Image::new(egui::include_image!("../vis/spikes_right.png"))
+                    .paint_at(ui, rect);
+            }
+
+            if channels.eyes {
+                egui::Image::new(egui::include_image!("../vis/eyes.png")).paint_at(ui, rect);
+            }
+            if channels.pupil_top {
+                egui::Image::new(egui::include_image!("../vis/pupil_top.png")).paint_at(ui, rect);
+            }
+            if channels.pupil_down {
+                egui::Image::new(egui::include_image!("../vis/pupil_down.png")).paint_at(ui, rect);
+            }
+
+            if channels.mouth_top {
+                egui::Image::new(egui::include_image!("../vis/mouth_top.png")).paint_at(ui, rect);
+            }
+            if channels.mouth_mid {
+                egui::Image::new(egui::include_image!("../vis/mouth_mid.png")).paint_at(ui, rect);
+            }
+            if channels.mouth_bottom {
+                egui::Image::new(egui::include_image!("../vis/mouth_bottom.png"))
+                    .paint_at(ui, rect);
+            }
         });
     }
 }
