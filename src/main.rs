@@ -5,6 +5,8 @@ use profirust::phy;
 mod fieldbus;
 mod logic;
 mod timers;
+#[cfg(feature = "visuals")]
+mod visuals;
 
 // I/O Station Parameters
 const IO_STATION_ADDRESS: u8 = 8;
@@ -41,57 +43,73 @@ fn main() {
     } else {
         Some(fieldbus::Fieldbus::new())
     };
+    #[cfg(feature = "visuals")]
+    let visuals = visuals::Visuals::new();
     let mut logic = logic::Logic::new();
 
     if let Some(fieldbus) = &mut fieldbus {
         fieldbus.enter_state(fieldbus::OperatingState::Operate);
     }
 
-    loop {
-        if let Some(fieldbus) = &mut fieldbus {
-            fieldbus.with_process_images(|pii, piq| {
-                use process_image::{tag, tag_mut};
+    let main_loop_handle = std::thread::spawn({
+        #[cfg(feature = "visuals")]
+        let visuals = visuals.clone();
+        move || {
+            loop {
+                if let Some(fieldbus) = &mut fieldbus {
+                    fieldbus.with_process_images(|pii, piq| {
+                        use process_image::{tag, tag_mut};
 
-                // -KEC1-K1 DO1
-                *tag_mut!(piq, X, 0, 0) = logic.outputs().channels.bottom_front;
-                // -KEC1-K1 DO2
-                *tag_mut!(piq, X, 0, 1) = logic.outputs().channels.bottom_back;
-                // -KEC1-K1 DO3
-                *tag_mut!(piq, X, 0, 2) = logic.outputs().channels.pupil_down;
-                // -KEC1-K1 DO4
-                *tag_mut!(piq, X, 0, 2) = logic.outputs().channels.pupil_top;
+                        // -KEC1-K1 DO1
+                        *tag_mut!(piq, X, 0, 0) = logic.outputs().channels.bottom_front;
+                        // -KEC1-K1 DO2
+                        *tag_mut!(piq, X, 0, 1) = logic.outputs().channels.bottom_back;
+                        // -KEC1-K1 DO3
+                        *tag_mut!(piq, X, 0, 2) = logic.outputs().channels.pupil_down;
+                        // -KEC1-K1 DO4
+                        *tag_mut!(piq, X, 0, 2) = logic.outputs().channels.pupil_top;
 
-                // -KEC1-K2 DO1
-                *tag_mut!(piq, X, 1, 0) = logic.outputs().channels.eyes;
-                // -KEC1-K2 DO2
-                *tag_mut!(piq, X, 1, 1) = logic.outputs().channels.mouth_mid;
-                // -KEC1-K2 DO3
-                *tag_mut!(piq, X, 1, 1) = logic.outputs().channels.mouth_bottom;
-                // -KEC1-K2 DO4
-                *tag_mut!(piq, X, 1, 1) = logic.outputs().channels.mouth_top;
+                        // -KEC1-K2 DO1
+                        *tag_mut!(piq, X, 1, 0) = logic.outputs().channels.eyes;
+                        // -KEC1-K2 DO2
+                        *tag_mut!(piq, X, 1, 1) = logic.outputs().channels.mouth_mid;
+                        // -KEC1-K2 DO3
+                        *tag_mut!(piq, X, 1, 1) = logic.outputs().channels.mouth_bottom;
+                        // -KEC1-K2 DO4
+                        *tag_mut!(piq, X, 1, 1) = logic.outputs().channels.mouth_top;
 
-                // -KEC1-K3 DO1
-                *tag_mut!(piq, X, 2, 0) = logic.outputs().channels.spikes_left;
-                // -KEC1-K3 DO2
-                *tag_mut!(piq, X, 2, 1) = logic.outputs().channels.spikes_mid;
-                // -KEC1-K3 DO3
-                *tag_mut!(piq, X, 2, 3) = logic.outputs().channels.spikes_right;
+                        // -KEC1-K3 DO1
+                        *tag_mut!(piq, X, 2, 0) = logic.outputs().channels.spikes_left;
+                        // -KEC1-K3 DO2
+                        *tag_mut!(piq, X, 2, 1) = logic.outputs().channels.spikes_mid;
+                        // -KEC1-K3 DO3
+                        *tag_mut!(piq, X, 2, 3) = logic.outputs().channels.spikes_right;
 
-                // -KEC1-K5 DO1 (inverted!)
-                *tag_mut!(piq, X, 4, 0) = !logic.outputs().indicator_fault;
-                // -KEC1-K5 DO2
-                *tag_mut!(piq, X, 4, 1) = logic.outputs().indicator_refill_air;
+                        // -KEC1-K5 DO1 (inverted!)
+                        *tag_mut!(piq, X, 4, 0) = !logic.outputs().indicator_fault;
+                        // -KEC1-K5 DO2
+                        *tag_mut!(piq, X, 4, 1) = logic.outputs().indicator_refill_air;
 
-                // -KEC1-K6 DI1
-                logic.inputs_mut().dc_ok = tag!(pii, X, 1, 0);
+                        // -KEC1-K6 DI1
+                        logic.inputs_mut().dc_ok = tag!(pii, X, 1, 0);
 
-                // -KEC1-K7 AI1
-                logic.inputs_mut().pressure_fullscale = tag!(pii, W, 2);
-            });
+                        // -KEC1-K7 AI1
+                        logic.inputs_mut().pressure_fullscale = tag!(pii, W, 2);
+                    });
+                }
+
+                #[cfg(feature = "visuals")]
+                visuals.update_channels(&logic.outputs().channels);
+
+                logic.run(std::time::Instant::now());
+
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
         }
+    });
 
-        logic.run(std::time::Instant::now());
-
-        std::thread::sleep(std::time::Duration::from_millis(50));
-    }
+    #[cfg(feature = "visuals")]
+    visuals.run();
+    #[cfg(not(feature = "visuals"))]
+    main_loop_handle.join().unwrap();
 }
