@@ -37,6 +37,11 @@ impl<T: PartialEq> BaseTimer<T> {
     pub fn reset_value(&mut self, value: T) {
         self.last = value;
     }
+
+    /// Trigger timer without a value change
+    pub fn trigger(&mut self, now: time::Instant) {
+        self.change = Some(now);
+    }
 }
 
 pub struct TimerResult {
