@@ -2,6 +2,14 @@
 =====================
 More info to follow soon™
 
+## Local Demo
+Run with `FAKE_CRAB=true` in your environment to ignore actual communication
+with the crab and just display the demo visuals:
+
+```bash
+FAKE_CRAB=true cargo run --features visuals
+```
+
 ## License
 Licensed under either of
 
