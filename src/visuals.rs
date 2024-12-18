@@ -84,6 +84,9 @@ impl eframe::App for CrabVisualization {
                 egui::Image::new(egui::include_image!("../vis/mouth_bottom.png"))
                     .paint_at(ui, rect);
             }
+
+            // Continuous repainting
+            ui.ctx().request_repaint();
         });
     }
 }
