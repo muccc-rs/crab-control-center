@@ -1,6 +1,10 @@
+use crate::timers;
+use timers::TimeExt;
+
 /// All emotions a rustacean can feel
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Emotion {
+    #[default]
     Happy,
     Sad,
     Surprised,
@@ -39,13 +43,16 @@ pub struct LogicInputs {
 pub struct LogicOutputs {
     pub channels: Channels,
     pub indicator_fault: bool,
-    pub indicator_refill_air: bool, 
+    pub indicator_refill_air: bool,
 }
 
 #[derive(Debug, Default)]
 pub struct Logic {
     inp: LogicInputs,
     out: LogicOutputs,
+
+    blink: bool,
+    t_blink: timers::BaseTimer<bool>,
 }
 
 impl Logic {
@@ -64,6 +71,8 @@ impl Logic {
 
 impl Logic {
     pub fn run(&mut self, now: std::time::Instant) {
+        self.t_blink.run(now, self.blink);
+
         self.out.channels = Channels {
             bottom_front: true,
             bottom_back: true,
@@ -78,6 +87,20 @@ impl Logic {
             mouth_top: false,
             mouth_mid: true,
             mouth_bottom: true,
+        };
+
+        self.blink = match self.blink {
+            false if self.t_blink.timer(now, 2.secs()) => true,
+            true if self.t_blink.timer(now, 300.millis()) => false,
+            d => d,
+        };
+
+        if self.blink {
+            self.out.channels.pupil_top = false;
+            self.out.channels.pupil_down = true;
+        } else {
+            self.out.channels.pupil_top = true;
+            self.out.channels.pupil_down = false;
         }
     }
 }
