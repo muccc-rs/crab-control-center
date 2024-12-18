@@ -1,33 +1,8 @@
-use profirust::dp;
-use profirust::fdl;
-use profirust::phy;
-
 mod fieldbus;
 mod logic;
 mod timers;
 #[cfg(feature = "visuals")]
 mod visuals;
-
-// I/O Station Parameters
-const IO_STATION_ADDRESS: u8 = 8;
-
-// Bus Parameters
-const MASTER_ADDRESS: u8 = 3;
-const BUS_DEVICE: &'static str = "/dev/ttyUSB0";
-const BAUDRATE: profirust::Baudrate = profirust::Baudrate::B19200;
-
-fn bus_parameters() -> (fdl::ParametersBuilder, std::time::Duration) {
-    let mut parameters = fdl::ParametersBuilder::new(MASTER_ADDRESS, BAUDRATE);
-    parameters
-        // We use a rather large T_slot time because USB-RS485 converters
-        // can induce large delays at times.
-        .slot_bits(576)
-        .watchdog_timeout(profirust::time::Duration::from_secs(60));
-
-    let sleep_time = std::time::Duration::from_millis(10);
-
-    (parameters, sleep_time)
-}
 
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -51,7 +26,7 @@ fn main() {
         fieldbus.enter_state(fieldbus::OperatingState::Operate);
     }
 
-    let main_loop_handle = std::thread::spawn({
+    let _main_loop_handle = std::thread::spawn({
         #[cfg(feature = "visuals")]
         let visuals = visuals.clone();
         move || {
@@ -111,5 +86,5 @@ fn main() {
     #[cfg(feature = "visuals")]
     visuals.run();
     #[cfg(not(feature = "visuals"))]
-    main_loop_handle.join().unwrap();
+    _main_loop_handle.join().unwrap();
 }

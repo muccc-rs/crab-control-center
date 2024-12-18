@@ -44,7 +44,7 @@ struct CrabVisualization {
 }
 
 impl eframe::App for CrabVisualization {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Crab Visualization");
             let available_size = ui.available_size();

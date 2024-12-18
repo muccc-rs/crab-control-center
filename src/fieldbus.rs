@@ -71,10 +71,12 @@ impl Fieldbus {
         self.inner.lock().unwrap().state = state;
     }
 
+    #[allow(unused)]
     pub fn is_online(&self) -> bool {
         self.inner.lock().unwrap().is_online
     }
 
+    #[allow(unused)]
     pub fn update_process_images(&mut self, pii: &mut [u8; PII_SIZE], piq: &[u8; PIQ_SIZE]) {
         let mut data = self.inner.lock().unwrap();
         pii.copy_from_slice(&data.pii);
@@ -204,8 +206,6 @@ fn fieldbus_task(fieldbus_data: Arc<Mutex<FieldbusInner>>) {
 
     log::info!("Connecting to the bus...");
     let mut phy = phy::SerialPortPhy::new(BUS_DEVICE, fdl.parameters().baudrate);
-
-    let start = profirust::time::Instant::now();
 
     fdl.set_online();
     dp_master.enter_operate();
