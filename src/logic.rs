@@ -118,5 +118,14 @@ impl Logic {
             self.out.channels.mouth_bottom = false;
             self.out.channels.mouth_mid = true;
         }
+
+        // Disconnected pressure sensor
+        let pressure_fault = self.inp.pressure_fullscale & 7 != 0;
+        let pressure_low = !pressure_fault && self.inp.pressure_fullscale < 16;
+
+        self.out.indicator_fault = pressure_fault;
+        self.out.indicator_refill_air = pressure_low;
+
+        log::info!("Pressure: {}", self.inp.pressure_fullscale);
     }
 }
