@@ -46,23 +46,23 @@ fn main() {
                         // -KEC1-K1 DO3
                         *tag_mut!(piq, X, 0, 2) = logic.outputs().channels.pupil_down;
                         // -KEC1-K1 DO4
-                        *tag_mut!(piq, X, 0, 2) = logic.outputs().channels.pupil_top;
+                        *tag_mut!(piq, X, 0, 3) = logic.outputs().channels.pupil_top;
 
                         // -KEC1-K2 DO1
                         *tag_mut!(piq, X, 1, 0) = logic.outputs().channels.eyes;
                         // -KEC1-K2 DO2
                         *tag_mut!(piq, X, 1, 1) = logic.outputs().channels.mouth_mid;
                         // -KEC1-K2 DO3
-                        *tag_mut!(piq, X, 1, 1) = logic.outputs().channels.mouth_bottom;
+                        *tag_mut!(piq, X, 1, 2) = logic.outputs().channels.mouth_bottom;
                         // -KEC1-K2 DO4
-                        *tag_mut!(piq, X, 1, 1) = logic.outputs().channels.mouth_top;
+                        *tag_mut!(piq, X, 1, 3) = logic.outputs().channels.mouth_top;
 
                         // -KEC1-K3 DO1
                         *tag_mut!(piq, X, 2, 0) = logic.outputs().channels.spikes_left;
                         // -KEC1-K3 DO2
                         *tag_mut!(piq, X, 2, 1) = logic.outputs().channels.spikes_mid;
                         // -KEC1-K3 DO3
-                        *tag_mut!(piq, X, 2, 3) = logic.outputs().channels.spikes_right;
+                        *tag_mut!(piq, X, 2, 2) = logic.outputs().channels.spikes_right;
 
                         // -KEC1-K5 DO1 (inverted!)
                         *tag_mut!(piq, X, 4, 0) = !logic.outputs().indicator_fault;
