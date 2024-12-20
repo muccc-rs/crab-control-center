@@ -1858,8 +1858,9 @@ checksum = "afbdc74edc00b6f6a218ca6a5364d6226a259d4b8ea1af4a0ea063f27e179f4d"
 
 [[package]]
 name = "profirust"
-version = "0.4.0"
-source = "git+https://github.com/rahix/profirust#b45db79363dacb58d2c60bcb5a50715ca42b7b01"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47e1ffcf51ad3251d763ff97e64a94ec8ccd6af5a165e1a8a962804e2d64731a"
 dependencies = [
  "bitflags 2.6.0",
  "bitvec",
