@@ -56,6 +56,8 @@ pub struct Logic {
 
     close_mouth: bool,
     t_close_mouth: timers::BaseTimer<bool>,
+
+    t_info: timers::BaseTimer<bool>,
 }
 
 impl Logic {
@@ -126,6 +128,9 @@ impl Logic {
         self.out.indicator_fault = pressure_fault;
         self.out.indicator_refill_air = pressure_low;
 
-        log::info!("Pressure: {}", self.inp.pressure_fullscale);
+        if self.t_info.timer(now, 60.secs()) {
+            log::info!("Pressure: {}", self.inp.pressure_fullscale);
+            self.t_info.trigger(now);
+        }
     }
 }
