@@ -58,6 +58,7 @@ pub struct Logic {
     t_close_mouth: timers::BaseTimer<bool>,
 
     t_info: timers::BaseTimer<bool>,
+    t_emotion: timers::BaseTimer<Option<Emotion>>,
 }
 
 impl Logic {
@@ -78,6 +79,7 @@ impl Logic {
     pub fn run(&mut self, now: std::time::Instant) {
         self.t_blink.run(now, self.blink);
         self.t_close_mouth.run(now, self.close_mouth);
+        self.t_emotion.run(now, self.inp.emotion);
 
         self.out.channels = Channels {
             bottom_front: true,
@@ -94,6 +96,56 @@ impl Logic {
             mouth_mid: true,
             mouth_bottom: true,
         };
+
+        if !self.t_emotion.timer(now, 1.millis()) {
+            log::info!("New Emotion: {:?}", self.inp.emotion);
+        }
+
+        // Stop displaying the emotion after 60 seconds
+        let emotion = if self.t_emotion.timer(now, 60.secs()) {
+            None
+        } else {
+            self.inp.emotion
+        };
+
+        match emotion {
+            Some(Emotion::Happy) => {
+                self.out.channels.pupil_down = false;
+                self.out.channels.pupil_top = true;
+                self.out.channels.mouth_top = false;
+                self.out.channels.mouth_mid = true;
+                self.out.channels.mouth_bottom = true;
+            }
+            Some(Emotion::Sad) => {
+                self.out.channels.pupil_down = true;
+                self.out.channels.pupil_top = false;
+                self.out.channels.mouth_top = true;
+                self.out.channels.mouth_mid = false;
+                self.out.channels.mouth_bottom = false;
+            }
+            Some(Emotion::Surprised) => {
+                self.out.channels.pupil_down = false;
+                self.out.channels.pupil_top = true;
+                self.out.channels.mouth_top = true;
+                self.out.channels.mouth_mid = false;
+                self.out.channels.mouth_bottom = true;
+            }
+            Some(Emotion::Angered) => {
+                self.out.channels.pupil_down = false;
+                self.out.channels.pupil_top = true;
+                self.out.channels.mouth_top = true;
+                self.out.channels.mouth_mid = true;
+                self.out.channels.mouth_bottom = false;
+            }
+            Some(Emotion::Neutral) => {
+                self.out.channels.pupil_down = false;
+                self.out.channels.pupil_top = true;
+                self.out.channels.mouth_top = false;
+                self.out.channels.mouth_mid = true;
+                self.out.channels.mouth_bottom = false;
+            }
+            None => (),
+        }
 
         self.blink = match self.blink {
             false if self.t_blink.timer(now, 3.secs()) => true,
