@@ -33,6 +33,8 @@ fn main() {
         #[cfg(feature = "visuals")]
         let visuals = visuals.clone();
         move || {
+            let start = std::time::Instant::now();
+
             loop {
                 #[cfg(feature = "fieldbus")]
                 if let Some(fieldbus) = &mut fieldbus {
@@ -79,6 +81,11 @@ fn main() {
 
                 #[cfg(feature = "visuals")]
                 visuals.update_channels(&logic.outputs().channels);
+
+                // TODO: Dummy emotion setting
+                if (std::time::Instant::now() - start).as_secs() > 5 {
+                    logic.inputs_mut().emotion = Some(logic::Emotion::Surprised);
+                }
 
                 logic.run(std::time::Instant::now());
 
