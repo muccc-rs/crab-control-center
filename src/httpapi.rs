@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use axum::{
+    extract::State,
     http::StatusCode,
     response::{Html, IntoResponse},
     routing::*,
@@ -10,7 +11,7 @@ use utoipa::OpenApi;
 use utoipa_redoc::Servable as RedocServable;
 use utoipa_scalar::Servable as ScalarServable;
 
-use crate::logic;
+use crate::{emotionmanager, logic};
 
 const BIND_ADDR: &str = "0.0.0.0:80";
 
@@ -40,15 +41,31 @@ impl Display for ApiEmotionMessage {
     responses(
         (status = 200, description = "Success!", body = ())
 ))]
-async fn post_emotion(Json(payload): Json<ApiEmotionMessage>) -> impl IntoResponse {
-    // todo!("add call to crab code");
-    (
-        StatusCode::OK,
-        "oh crab: ".to_string() + &payload.to_string(),
-    )
+async fn post_emotion(
+    State(state): State<AppState>,
+    Json(payload): Json<ApiEmotionMessage>,
+) -> impl IntoResponse {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    let set_emotion_result = state
+        .emotion_ch_tx
+        .send(emotionmanager::EmotionCommand::Set {
+            emotion: payload.emotion,
+            resp: tx,
+        })
+        .await;
+
+    if let Err(e) = set_emotion_result {
+        return (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e));
+    }
+
+    if let Err(e) = rx.await {
+        return (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {}", e));
+    }
+
+    (StatusCode::OK, "ok".to_string())
 }
 
-async fn root() -> impl IntoResponse {
+async fn root(State(_): State<AppState>) -> impl IntoResponse {
     Html(
         r#"
         <!DOCTYPE html>
@@ -66,9 +83,10 @@ async fn root() -> impl IntoResponse {
     )
 }
 
-fn app() -> axum::Router {
-    let routes: utoipa_axum::router::UtoipaMethodRouter = utoipa_axum::routes!(post_emotion);
-    let (router, api): (axum::Router, utoipa::openapi::OpenApi) =
+fn app() -> axum::Router<AppState> {
+    let routes: utoipa_axum::router::UtoipaMethodRouter<AppState> =
+        utoipa_axum::routes!(post_emotion);
+    let (router, api): (axum::Router<AppState>, utoipa::openapi::OpenApi) =
         utoipa_axum::router::OpenApiRouter::with_openapi(ApiDoc::openapi())
             .routes(routes)
             .route("/", get(root))
@@ -86,14 +104,23 @@ fn app() -> axum::Router {
     router
 }
 
-#[tokio::main]
-pub async fn run_http_server() {
-    let app = app();
-    let listener = tokio::net::TcpListener::bind(BIND_ADDR).await.unwrap();
-
-    axum::serve(listener, app).await.unwrap();
+#[derive(Clone)]
+struct AppState {
+    pub emotion_ch_tx: tokio::sync::mpsc::Sender<emotionmanager::EmotionCommand>,
 }
 
-fn main() {
-    run_http_server();
+#[tokio::main]
+pub async fn run_http_server(
+    emotion_ch_tx: tokio::sync::mpsc::Sender<emotionmanager::EmotionCommand>,
+    emotionmanager: emotionmanager::EmotionManager,
+) {
+    let state = AppState { emotion_ch_tx };
+    let router = app();
+    let router = router.with_state(state);
+    let listener = tokio::net::TcpListener::bind(BIND_ADDR).await.unwrap();
+
+    let em = emotionmanager.run();
+
+    axum::serve(listener, router).await.unwrap();
+    em.await.unwrap();
 }

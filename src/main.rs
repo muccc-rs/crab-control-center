@@ -1,3 +1,6 @@
+use emotionmanager::EmotionCommand;
+
+mod emotionmanager;
 #[cfg(feature = "fieldbus")]
 mod fieldbus;
 mod httpapi;
@@ -7,7 +10,13 @@ mod timers;
 mod visuals;
 
 fn main() {
-    httpapi::run_http_server();
+    let (emotion_tx, emotion_rx) = tokio::sync::mpsc::channel::<EmotionCommand>(32);
+
+    let emotionmanager = emotionmanager::EmotionManager::new(emotion_rx);
+
+    let emotion_tx_http = emotion_tx.clone();
+    httpapi::run_http_server(emotion_tx_http, emotionmanager);
+
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_micros()
         .init();
@@ -84,10 +93,13 @@ fn main() {
                 #[cfg(feature = "visuals")]
                 visuals.update_channels(&logic.outputs().channels);
 
-                // TODO: Dummy emotion setting
-                if (std::time::Instant::now() - start).as_secs() > 5 {
-                    logic.inputs_mut().emotion = Some(logic::Emotion::Surprised);
-                }
+                let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
+                let cmd = EmotionCommand::Get { resp: resp_tx };
+                emotion_tx
+                    .blocking_send(cmd)
+                    .expect("failed to send emotion command");
+
+                logic.inputs_mut().emotion = Some(resp_rx.blocking_recv().unwrap());
 
                 logic.run(std::time::Instant::now());
 
