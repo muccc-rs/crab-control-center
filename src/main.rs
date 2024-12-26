@@ -1,11 +1,13 @@
 #[cfg(feature = "fieldbus")]
 mod fieldbus;
+mod httpapi;
 mod logic;
 mod timers;
 #[cfg(feature = "visuals")]
 mod visuals;
 
 fn main() {
+    httpapi::run_http_server();
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_micros()
         .init();

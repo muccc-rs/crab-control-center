@@ -1,8 +1,9 @@
 use crate::timers;
 use timers::TimeExt;
+use utoipa::ToSchema;
 
 /// All emotions a rustacean can feel
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, ToSchema, serde::Deserialize)]
 pub enum Emotion {
     #[default]
     Happy,
