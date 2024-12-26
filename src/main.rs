@@ -12,7 +12,8 @@ mod visuals;
 fn main() {
     let (emotion_tx, emotion_rx) = tokio::sync::mpsc::channel::<EmotionCommand>(32);
 
-    let emotionmanager = emotionmanager::EmotionManager::new(emotion_rx);
+    let emotioncontainer = emotionmanager::EmotionContainer::new();
+    let emotionmanager = emotionmanager::EmotionManager::new(emotioncontainer.clone(), emotion_rx);
 
     let emotion_tx_http = emotion_tx.clone();
     std::thread::spawn(move || {
@@ -95,14 +96,7 @@ fn main() {
                 #[cfg(feature = "visuals")]
                 visuals.update_channels(&logic.outputs().channels);
 
-                let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
-                let cmd = EmotionCommand::Get { resp: resp_tx };
-                emotion_tx
-                    .blocking_send(cmd)
-                    .expect("failed to send emotion command");
-
-                logic.inputs_mut().emotion =
-                    Some(resp_rx.blocking_recv().expect("failed to receive emotion"));
+                logic.inputs_mut().emotion = Some(emotioncontainer.blocking_get());
 
                 logic.run(std::time::Instant::now());
 
