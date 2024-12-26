@@ -15,7 +15,9 @@ fn main() {
     let emotionmanager = emotionmanager::EmotionManager::new(emotion_rx);
 
     let emotion_tx_http = emotion_tx.clone();
-    httpapi::run_http_server(emotion_tx_http, emotionmanager);
+    std::thread::spawn(move || {
+        httpapi::run_http_server(emotion_tx_http, emotionmanager);
+    });
 
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_micros()
@@ -99,7 +101,8 @@ fn main() {
                     .blocking_send(cmd)
                     .expect("failed to send emotion command");
 
-                logic.inputs_mut().emotion = Some(resp_rx.blocking_recv().unwrap());
+                logic.inputs_mut().emotion =
+                    Some(resp_rx.blocking_recv().expect("failed to receive emotion"));
 
                 logic.run(std::time::Instant::now());
 
