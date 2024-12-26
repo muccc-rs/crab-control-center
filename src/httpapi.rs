@@ -82,7 +82,7 @@ async fn root(State(_): State<AppState>) -> impl IntoResponse {
                 <li><a href="/rapidoc">RapiDoc</a></li>
                 <li><a href="/scalar">Scalar</a></li>
                 </ul>
-                <img src="https://i.redd.it/aqfca1cja1231.png" alt="Crab">
+                <img src="https://i.redd.it/aqfca1cja1231.png" alt="Crab" width="100%">
             </body>
         </html>
         "#,
