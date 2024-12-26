@@ -75,8 +75,14 @@ async fn root(State(_): State<AppState>) -> impl IntoResponse {
             </head>
             <body>
                 <h1>Crab Emotion API</h1>
-                <p>POST /crab/emotion</p>
-                <p>GET /swagger-ui</p>
+                <h2>Docs</h2>
+                <ul>
+                <li><a href="/swagger-ui">Swagger</a></li>
+                <li><a href="/redoc">Redoc</a></li>
+                <li><a href="/rapidoc">RapiDoc</a></li>
+                <li><a href="/scalar">Scalar</a></li>
+                </ul>
+                <img src="https://i.redd.it/aqfca1cja1231.png" alt="Crab">
             </body>
         </html>
         "#,
