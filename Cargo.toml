@@ -5,7 +5,6 @@ edition = "2021"
 
 license = "MIT OR Apache-2.0"
 publish = false
-# default-run = "crab-control-center"
 
 [dependencies]
 env_logger = { version = "0.11.5", default-features = false, features = [
@@ -46,7 +45,3 @@ utoipa-rapidoc = { version = "5.0.0", features = ["axum"] }
 visuals = ["dep:eframe", "dep:egui", "dep:egui_extras"]
 fieldbus = ["dep:profirust"]
 default = ["visuals"]
-
-[[bin]]
-name = "httpapi"
-path = "src/httpapi.rs"
