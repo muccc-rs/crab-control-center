@@ -1,6 +1,3 @@
-mod logic;
-mod timers;
-
 use std::fmt::Display;
 
 use axum::{
@@ -12,6 +9,8 @@ use axum::{
 use utoipa::OpenApi;
 use utoipa_redoc::Servable as RedocServable;
 use utoipa_scalar::Servable as ScalarServable;
+
+use crate::logic;
 
 const BIND_ADDR: &str = "0.0.0.0:80";
 
