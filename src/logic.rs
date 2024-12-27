@@ -102,14 +102,7 @@ impl Logic {
             log::info!("New Emotion: {:?}", self.inp.emotion);
         }
 
-        // Stop displaying the emotion after 60 seconds
-        let emotion = if self.t_emotion.timer(now, 60.secs()) {
-            None
-        } else {
-            self.inp.emotion
-        };
-
-        match emotion {
+        match self.inp.emotion {
             Some(Emotion::Happy) => {
                 self.out.channels.pupil_down = false;
                 self.out.channels.pupil_top = true;
