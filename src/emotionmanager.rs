@@ -2,6 +2,8 @@ use crate::logic;
 
 type Responder<T> = tokio::sync::oneshot::Sender<T>;
 
+pub const EMOTION_RESET_TIMER_SECS: u64 = 60;
+
 #[derive(Default, Clone, Debug)]
 pub struct EmotionContainer(std::sync::Arc<tokio::sync::Mutex<logic::Emotion>>);
 
@@ -51,14 +53,22 @@ impl EmotionManager {
 
     pub fn run(mut self) -> tokio::task::JoinHandle<()> {
         tokio::task::spawn(async move {
-            while let Some(command) = self.rx.recv().await {
-                match command {
-                    EmotionCommand::Get { resp } => {
-                        let _ = resp.send(self.emotion.get().await);
-                    }
-                    EmotionCommand::Set { emotion, resp } => {
-                        self.emotion.set(emotion).await;
-                        let _ = resp.send(());
+            loop {
+                tokio::select! {
+                    val = self.rx.recv() => {
+                        match val {
+                            Some(EmotionCommand::Get { resp }) => {
+                                let _ = resp.send(self.emotion.get().await);
+                            }
+                            Some(EmotionCommand::Set { emotion, resp }) => {
+                                self.emotion.set(emotion).await;
+                                let _ = resp.send(());
+                            }
+                            None => return,
+                        }
+                    },
+                    _ = tokio::time::sleep(std::time::Duration::from_secs(EMOTION_RESET_TIMER_SECS)) => {
+                        self.emotion.set(logic::Emotion::default()).await;
                     }
                 }
             }
