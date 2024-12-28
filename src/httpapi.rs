@@ -13,7 +13,7 @@ use utoipa_scalar::Servable as ScalarServable;
 
 use crate::{emotionmanager, logic};
 
-const BIND_ADDR: &str = "0.0.0.0:80";
+const BIND_ADDR: &str = "0.0.0.0:8080";
 
 #[derive(utoipa::OpenApi)]
 #[openapi(info(
