@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="generator" content="HTML Tidy for HTML5 for Linux version 5.7.45">
+  <title>Crab Emotion API</title>
+</head>
+<body>
+  <script>
+  const submit = (clickEvent) => {
+    const message = document.getElementById("feelings").value;
+    fetch("/crab/talk", {
+      method: 'POST',
+      body: JSON.stringify({
+        message,
+      }),
+      headers: {
+        "X-Funny-Noises": true,
+        "Content-Type": 'application/json'
+      }
+    })
+  }
+  </script>
+  <h1>Crab Emotion API</h1>
+  <h2>Docs</h2>
+  <p>
+  <marquee>How does the crab feel?</marquee><input id="feelings"/> <button onclick="submit()">Submit</button>
+  </p>
+  <ul>
+    <li>
+      <a href="/swagger-ui">Swagger</a>
+    </li>
+    <li>
+      <a href="/redoc">Redoc</a>
+    </li>
+    <li>
+      <a href="/rapidoc">RapiDoc</a>
+    </li>
+    <li>
+      <a href="/scalar">Scalar</a>
+    </li>
+  </ul><img src="https://i.redd.it/aqfca1cja1231.png" alt="Crab" width="100%">
+</body>
+</html>
