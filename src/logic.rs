@@ -156,6 +156,7 @@ impl Logic {
         }
 
         self.close_mouth = match self.close_mouth {
+            _ if !self.t_emotion.timer(now, 10.secs()) => false,
             false if self.t_close_mouth.timer(now, 10.secs()) => true,
             true if self.t_close_mouth.timer(now, 2.secs()) => false,
             d => d,
