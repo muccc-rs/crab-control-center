@@ -118,27 +118,7 @@ async fn post_crab_talk(
 }
 
 async fn root(State(_): State<AppState>) -> impl IntoResponse {
-    Html(
-        r#"
-        <!DOCTYPE html>
-        <html>
-            <head>
-                <title>Crab Emotion API</title>
-            </head>
-            <body>
-                <h1>Crab Emotion API</h1>
-                <h2>Docs</h2>
-                <ul>
-                <li><a href="/swagger-ui">Swagger</a></li>
-                <li><a href="/redoc">Redoc</a></li>
-                <li><a href="/rapidoc">RapiDoc</a></li>
-                <li><a href="/scalar">Scalar</a></li>
-                </ul>
-                <img src="https://i.redd.it/aqfca1cja1231.png" alt="Crab" width="100%">
-            </body>
-        </html>
-        "#,
-    )
+    Html(include_str!("crab.html"))
 }
 
 fn app() -> axum::Router<AppState> {
