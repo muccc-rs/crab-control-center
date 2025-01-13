@@ -3,6 +3,7 @@ use emotionmanager::EmotionCommand;
 mod emotionmanager;
 #[cfg(feature = "fieldbus")]
 mod fieldbus;
+mod graphql;
 mod httpapi;
 mod logic;
 mod timers;
@@ -89,7 +90,7 @@ fn main() {
                         logic.inputs_mut().dc_ok = tag!(pii, X, 1, 0);
 
                         // -KEC1-K7 AI1
-                        logic.inputs_mut().pressure_fullscale = tag!(pii, W, 2);
+                        logic.inputs_mut().pressure_fullscale = tag!(pii, W, 2).into();
                     });
                 }
 
