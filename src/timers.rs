@@ -1,7 +1,7 @@
 #![allow(unused)]
 use std::time;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct BaseTimer<T> {
     change: Option<time::Instant>,
     last: T,
@@ -45,12 +45,13 @@ impl<T: PartialEq> BaseTimer<T> {
     }
 }
 
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct TimerResult {
     pub done: bool,
     pub timing: bool,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct TimerOn {
     base: BaseTimer<bool>,
 }
@@ -69,7 +70,7 @@ impl TimerOn {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct TimerOff {
     base: BaseTimer<bool>,
 }
@@ -88,7 +89,7 @@ impl TimerOff {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct PulseTimer {
     base: BaseTimer<bool>,
 }

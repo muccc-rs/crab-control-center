@@ -3,7 +3,9 @@ use timers::TimeExt;
 use utoipa::ToSchema;
 
 /// All emotions a rustacean can feel
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, ToSchema, serde::Deserialize)]
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, ToSchema, serde::Deserialize, juniper::GraphQLEnum,
+)]
 pub enum Emotion {
     #[default]
     Happy,
@@ -13,7 +15,7 @@ pub enum Emotion {
     Neutral,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, juniper::GraphQLObject)]
 pub struct Channels {
     // Outline
     pub bottom_front: bool,
@@ -33,38 +35,49 @@ pub struct Channels {
     pub mouth_bottom: bool,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, juniper::GraphQLObject)]
 pub struct LogicInputs {
     pub emotion: Option<Emotion>,
     pub dc_ok: bool,
-    pub pressure_fullscale: u16,
+    pub pressure_fullscale: i32,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, juniper::GraphQLObject)]
 pub struct LogicOutputs {
     pub channels: Channels,
     pub indicator_fault: bool,
     pub indicator_refill_air: bool,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, juniper::GraphQLObject)]
+#[graphql(name = "LogicState")]
 pub struct Logic {
+    #[graphql(ignore)]
     inp: LogicInputs,
+    #[graphql(ignore)]
     out: LogicOutputs,
 
     blink: bool,
+    #[graphql(ignore)]
     t_blink: timers::BaseTimer<bool>,
 
     close_mouth: bool,
+    #[graphql(ignore)]
     t_close_mouth: timers::BaseTimer<bool>,
 
+    #[graphql(ignore)]
     t_info: timers::BaseTimer<bool>,
+    #[graphql(ignore)]
     t_emotion: timers::BaseTimer<Option<Emotion>>,
 }
 
 impl Logic {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn inputs(&self) -> &LogicInputs {
+        &self.inp
     }
 
     pub fn inputs_mut(&mut self) -> &mut LogicInputs {
