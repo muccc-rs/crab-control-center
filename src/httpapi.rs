@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, sync::Arc};
 
 use axum::{
     extract::State,
@@ -7,6 +7,8 @@ use axum::{
     routing::*,
     Json,
 };
+use juniper_axum::{extract::JuniperRequest, response::JuniperResponse};
+use tokio::sync::RwLock;
 use utoipa::OpenApi;
 use utoipa_redoc::Servable as RedocServable;
 use utoipa_scalar::Servable as ScalarServable;
@@ -121,6 +123,14 @@ async fn root(State(_): State<AppState>) -> impl IntoResponse {
     Html(include_str!("crab.html"))
 }
 
+async fn graphql(
+    axum::Extension(schema): axum::Extension<Arc<crate::graphql::Schema>>,
+    axum::Extension(context): axum::Extension<Arc<RwLock<crate::graphql::Context>>>,
+    JuniperRequest(req): JuniperRequest,
+) -> JuniperResponse {
+    JuniperResponse(req.execute(&*schema, &*context.read().await).await)
+}
+
 fn app() -> axum::Router<AppState> {
     let routes: utoipa_axum::router::UtoipaMethodRouter<AppState> =
         utoipa_axum::routes!(post_emotion);
@@ -128,6 +138,11 @@ fn app() -> axum::Router<AppState> {
         utoipa_axum::router::OpenApiRouter::with_openapi(ApiDoc::openapi())
             .routes(routes)
             .routes(utoipa_axum::routes!(post_crab_talk))
+            .route(
+                "/graphql",
+                on(MethodFilter::GET.or(MethodFilter::POST), graphql),
+            )
+            .route("/graphiql", get(juniper_axum::graphiql("/graphql", None)))
             .route("/", get(root))
             .split_for_parts();
 
@@ -152,10 +167,13 @@ struct AppState {
 pub async fn run_http_server(
     emotion_ch_tx: tokio::sync::mpsc::Sender<emotionmanager::EmotionCommand>,
     emotionmanager: emotionmanager::EmotionManager,
+    graphql_context: Arc<RwLock<crate::graphql::Context>>,
 ) {
     let state = AppState { emotion_ch_tx };
-    let router = app();
-    let router = router.with_state(state);
+    let router = app()
+        .with_state(state)
+        .layer(axum::Extension(Arc::new(crate::graphql::schema())))
+        .layer(axum::Extension(graphql_context));
     let listener = tokio::net::TcpListener::bind(BIND_ADDR).await.unwrap();
 
     let em = emotionmanager.run();

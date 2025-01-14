@@ -41,6 +41,7 @@ utoipa-scalar = { version = "0.2.0", features = ["axum"] }
 utoipa-redoc = { version = "5.0.0", features = ["axum"] }
 utoipa-rapidoc = { version = "5.0.0", features = ["axum"] }
 juniper = { version = "0.16.1", features = ["schema-language"] }
+juniper_axum = "0.1.1"
 
 [features]
 visuals = ["dep:eframe", "dep:egui", "dep:egui_extras"]

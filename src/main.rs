@@ -16,9 +16,14 @@ fn main() {
     let emotioncontainer = emotionmanager::EmotionContainer::new();
     let emotionmanager = emotionmanager::EmotionManager::new(emotioncontainer.clone(), emotion_rx);
 
-    let emotion_tx_http = emotion_tx.clone();
-    std::thread::spawn(move || {
-        httpapi::run_http_server(emotion_tx_http, emotionmanager);
+    let graphql_context = std::sync::Arc::new(tokio::sync::RwLock::new(Default::default()));
+
+    std::thread::spawn({
+        let emotion_tx = emotion_tx.clone();
+        let graphql_context = graphql_context.clone();
+        move || {
+            httpapi::run_http_server(emotion_tx, emotionmanager, graphql_context);
+        }
     });
 
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -100,6 +105,12 @@ fn main() {
                 logic.inputs_mut().emotion = Some(emotioncontainer.blocking_get());
 
                 logic.run(std::time::Instant::now());
+
+                // Mirror the logic state into the graphql context so it can be queried remotely.
+                graphql_context
+                    .blocking_write()
+                    .logic_image
+                    .clone_from(&logic);
 
                 std::thread::sleep(std::time::Duration::from_millis(50));
             }
