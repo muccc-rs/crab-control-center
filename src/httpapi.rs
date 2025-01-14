@@ -7,7 +7,7 @@ use axum::{
     routing::*,
     Json,
 };
-use juniper_axum::{extract::JuniperRequest, response::JuniperResponse};
+use juniper_axum::{extract::JuniperRequest, response::JuniperResponse, ws};
 use tokio::sync::RwLock;
 use utoipa::OpenApi;
 use utoipa_redoc::Servable as RedocServable;
@@ -131,6 +131,25 @@ async fn graphql(
     JuniperResponse(req.execute(&*schema, &context).await)
 }
 
+async fn graphql_subscriptions(
+    axum::Extension(schema): axum::Extension<Arc<crate::graphql::Schema>>,
+    axum::Extension(context): axum::Extension<crate::graphql::Context>,
+    ws: axum::extract::WebSocketUpgrade,
+) -> axum::response::Response {
+    ws.protocols(["graphql-transport-ws", "graphql-ws"])
+        .on_upgrade(move |socket| {
+            juniper_axum::subscriptions::serve_ws(
+                socket,
+                schema,
+                juniper_graphql_ws::ConnectionConfig {
+                    context,
+                    max_in_flight_operations: 0,
+                    keep_alive_interval: std::time::Duration::from_secs(15),
+                },
+            )
+        })
+}
+
 fn app() -> axum::Router<AppState> {
     let routes: utoipa_axum::router::UtoipaMethodRouter<AppState> =
         utoipa_axum::routes!(post_emotion);
@@ -142,7 +161,11 @@ fn app() -> axum::Router<AppState> {
                 "/graphql",
                 on(MethodFilter::GET.or(MethodFilter::POST), graphql),
             )
-            .route("/graphiql", get(juniper_axum::graphiql("/graphql", None)))
+            .route("/graphql-subscriptions", get(graphql_subscriptions))
+            .route(
+                "/graphiql",
+                get(juniper_axum::graphiql("/graphql", "/graphql-subscriptions")),
+            )
             .route("/", get(root))
             .split_for_parts();
 

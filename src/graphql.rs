@@ -1,3 +1,6 @@
+use futures::StreamExt as _;
+use std::time::Duration;
+
 // Fallback values when no fieldbus connection is available
 cfg_if::cfg_if! {
     if #[cfg(feature = "fieldbus")] {
@@ -35,19 +38,10 @@ impl Default for ContextInner {
 
 impl juniper::Context for Context {}
 
-pub type Schema = juniper::RootNode<
-    'static,
-    Query,
-    juniper::EmptyMutation<Context>,
-    juniper::EmptySubscription<Context>,
->;
+pub type Schema = juniper::RootNode<'static, Query, juniper::EmptyMutation<Context>, Subscription>;
 
 pub fn schema() -> Schema {
-    Schema::new(
-        Query,
-        juniper::EmptyMutation::new(),
-        juniper::EmptySubscription::new(),
-    )
+    Schema::new(Query, juniper::EmptyMutation::new(), Subscription)
 }
 
 pub struct Query;
@@ -111,6 +105,22 @@ impl<'a> ProcessImage<'a> {
             return Err("address too big".into());
         }
         Ok(process_image::tag!(&self.process_image, W, addr).into())
+    }
+}
+
+pub struct Subscription;
+
+type SubscriptionStream<T> =
+    std::pin::Pin<Box<dyn futures::stream::Stream<Item = Result<T, juniper::FieldError>> + Send>>;
+
+#[juniper::graphql_subscription(Context = Context)]
+impl Subscription {
+    async fn watch(period: f64, context: &Context) -> SubscriptionStream<Query> {
+        let stream = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
+            Duration::from_secs_f64(period).max(Duration::from_millis(200)),
+        ))
+        .map(move |_| Ok(Query));
+        Box::pin(stream)
     }
 }
 
