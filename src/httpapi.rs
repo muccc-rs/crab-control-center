@@ -7,8 +7,7 @@ use axum::{
     routing::*,
     Json,
 };
-use juniper_axum::{extract::JuniperRequest, response::JuniperResponse, ws};
-use tokio::sync::RwLock;
+use juniper_axum::{extract::JuniperRequest, response::JuniperResponse};
 use utoipa::OpenApi;
 use utoipa_redoc::Servable as RedocServable;
 use utoipa_scalar::Servable as ScalarServable;
