@@ -16,7 +16,7 @@ fn main() {
     let emotioncontainer = emotionmanager::EmotionContainer::new();
     let emotionmanager = emotionmanager::EmotionManager::new(emotioncontainer.clone(), emotion_rx);
 
-    let graphql_context = std::sync::Arc::new(tokio::sync::RwLock::new(Default::default()));
+    let graphql_context = graphql::Context::default();
 
     std::thread::spawn({
         let emotion_tx = emotion_tx.clone();
@@ -58,7 +58,7 @@ fn main() {
             loop {
                 #[cfg(feature = "fieldbus")]
                 if let Some(fieldbus) = &mut fieldbus {
-                    let mut graphql_context = graphql_context.blocking_write();
+                    let mut graphql_context = graphql_context.inner.blocking_write();
 
                     fieldbus.with_process_images(|pii, piq| {
                         use process_image::{tag, tag_mut};
@@ -114,7 +114,7 @@ fn main() {
 
                 // Mirror the logic state into the graphql context so it can be queried remotely.
                 {
-                    let mut graphql_context = graphql_context.blocking_write();
+                    let mut graphql_context = graphql_context.inner.blocking_write();
 
                     graphql_context.logic_image.clone_from(&logic);
                     graphql_context.now = now;

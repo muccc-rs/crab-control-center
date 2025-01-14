@@ -9,15 +9,20 @@ cfg_if::cfg_if! {
     }
 }
 
-#[derive(Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Context {
+    pub inner: std::sync::Arc<tokio::sync::RwLock<ContextInner>>,
+}
+
+#[derive(Debug)]
+pub struct ContextInner {
     pub logic_image: crate::logic::Logic,
     pub pii: [u8; PII_SIZE],
     pub piq: [u8; PIQ_SIZE],
     pub now: std::time::Instant,
 }
 
-impl Default for Context {
+impl Default for ContextInner {
     fn default() -> Self {
         Self {
             logic_image: Default::default(),
@@ -49,33 +54,37 @@ pub struct Query;
 
 #[juniper::graphql_object(Context = Context)]
 impl Query {
-    fn inputs(context: &Context) -> crate::logic::LogicInputs {
-        context.logic_image.inputs().clone()
+    async fn inputs(context: &Context) -> crate::logic::LogicInputs {
+        context.inner.read().await.logic_image.inputs().clone()
     }
 
-    fn outputs(context: &Context) -> crate::logic::LogicOutputs {
-        context.logic_image.outputs().clone()
+    async fn outputs(context: &Context) -> crate::logic::LogicOutputs {
+        context.inner.read().await.logic_image.outputs().clone()
     }
 
-    fn state(context: &Context) -> crate::logic::Logic {
-        context.logic_image.clone()
+    async fn state(context: &Context) -> crate::logic::Logic {
+        context.inner.read().await.logic_image.clone()
     }
 
-    fn hardware_inputs<'a>(context: &'a Context) -> ProcessImage<'a> {
+    async fn hardware_inputs<'a>(context: &'a Context) -> ProcessImage<'a> {
         ProcessImage {
-            process_image: &context.pii[..],
+            process_image: tokio::sync::RwLockReadGuard::map(context.inner.read().await, |c| {
+                &c.pii[..]
+            }),
         }
     }
 
-    fn hardware_outputs<'a>(context: &'a Context) -> ProcessImage<'a> {
+    async fn hardware_outputs<'a>(context: &'a Context) -> ProcessImage<'a> {
         ProcessImage {
-            process_image: &context.piq[..],
+            process_image: tokio::sync::RwLockReadGuard::map(context.inner.read().await, |c| {
+                &c.piq[..]
+            }),
         }
     }
 }
 
 pub struct ProcessImage<'a> {
-    process_image: &'a [u8],
+    process_image: tokio::sync::RwLockReadGuard<'a, [u8]>,
 }
 
 #[juniper::graphql_object]
