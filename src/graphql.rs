@@ -1,5 +1,5 @@
 use futures::StreamExt as _;
-use std::time::Duration;
+use std::{pin::Pin, time::Duration};
 
 // Fallback values when no fieldbus connection is available
 cfg_if::cfg_if! {
@@ -110,18 +110,11 @@ impl<'a> ProcessImage<'a> {
 
 pub struct Subscription;
 
-type SubscriptionStream<'a, T> = std::pin::Pin<
-    Box<dyn futures::stream::Stream<Item = Result<T, juniper::FieldError>> + Send + 'a>,
->;
-
-#[juniper::graphql_subscription(Context = Context)]
-#[graphql(scalar = juniper::DefaultScalarValue)]
 impl Subscription {
     async fn watch<'a>(
         period: f64,
-        context: &Context,
-        executor: &juniper::Executor<'_, 'a, Context, juniper::DefaultScalarValue>,
-    ) -> SubscriptionStream<'a, Query> {
+        executor: &juniper::Executor<'_, 'a, Context>,
+    ) -> Pin<Box<dyn futures::stream::Stream<Item = juniper::ExecutionResult> + Send + 'a>> {
         let executor = executor.as_owned_executor();
         let stream = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
             Duration::from_secs_f64(period).max(Duration::from_millis(200)),
@@ -139,11 +132,83 @@ impl Subscription {
             *state = Some(q.clone());
             std::future::ready(Some(Some(q)))
         })
-        .filter_map(|opt| std::future::ready(opt))
-        // Unfortunately, we now have to re-execute the same query again because I can't figure out
-        // how to return a juniper::Value...
-        .map(move |_| Ok(Query));
+        .filter_map(|opt| std::future::ready(opt));
+
         Box::pin(stream)
+    }
+}
+
+impl juniper::GraphQLType for Subscription {
+    fn name(_info: &Self::TypeInfo) -> Option<&str> {
+        Some("Subscription")
+    }
+
+    fn meta<'r>(
+        info: &Self::TypeInfo,
+        registry: &mut juniper::Registry<'r>,
+    ) -> juniper::meta::MetaType<'r>
+    where
+        juniper::DefaultScalarValue: 'r,
+    {
+        let fields = [registry
+            .field_convert::<Query, _, Self::Context>("watch", info)
+            .argument(registry.arg::<f64>("period", info))];
+
+        registry
+            .build_object_type::<Subscription>(info, &fields)
+            .into_meta()
+    }
+}
+
+impl juniper::GraphQLValue for Subscription {
+    type Context = Context;
+    type TypeInfo = ();
+
+    fn type_name<'i>(&self, info: &'i Self::TypeInfo) -> Option<&'i str> {
+        <Self as juniper::GraphQLType>::name(info)
+    }
+}
+
+impl juniper::GraphQLSubscriptionValue for Subscription {
+    fn resolve_field_into_stream<'s, 'i, 'fi, 'args, 'e, 'ref_e, 'res, 'f>(
+        &'s self,
+        _info: &'i Self::TypeInfo,
+        field: &'fi str,
+        args: juniper::Arguments<'args>,
+        executor: &'ref_e juniper::Executor<'ref_e, 'e, Self::Context>,
+    ) -> juniper::BoxFuture<'f, juniper::FieldResult<juniper::Value<juniper::ValuesStream<'res>>>>
+    where
+        's: 'f,
+        'fi: 'f,
+        'args: 'f,
+        'ref_e: 'f,
+        'res: 'f,
+        'i: 'res,
+        'e: 'res,
+    {
+        match field {
+            "watch" => futures::FutureExt::boxed(async move {
+                let stream = Self::watch(
+                    args.get::<f64>("period").and_then(|opt| {
+                        opt.ok_or_else(|| juniper::FieldError::from("Missing argument `period`"))
+                    })?,
+                    &executor,
+                )
+                .await;
+
+                let ex = executor.as_owned_executor();
+                let stream = stream.then(move |val| {
+                    std::future::ready(val.map_err(|e| ex.as_executor().new_error(e)))
+                });
+
+                Ok(juniper::Value::Scalar(stream.boxed()))
+            }),
+            _ => Box::pin(async move {
+                Err(juniper::FieldError::from(format!(
+                    "Field `{field}` not found on type `Subscription`",
+                )))
+            }),
+        }
     }
 }
 
