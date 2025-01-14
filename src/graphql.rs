@@ -110,15 +110,38 @@ impl<'a> ProcessImage<'a> {
 
 pub struct Subscription;
 
-type SubscriptionStream<T> =
-    std::pin::Pin<Box<dyn futures::stream::Stream<Item = Result<T, juniper::FieldError>> + Send>>;
+type SubscriptionStream<'a, T> = std::pin::Pin<
+    Box<dyn futures::stream::Stream<Item = Result<T, juniper::FieldError>> + Send + 'a>,
+>;
 
 #[juniper::graphql_subscription(Context = Context)]
+#[graphql(scalar = juniper::DefaultScalarValue)]
 impl Subscription {
-    async fn watch(period: f64, context: &Context) -> SubscriptionStream<Query> {
+    async fn watch<'a>(
+        period: f64,
+        context: &Context,
+        executor: &juniper::Executor<'_, 'a, Context, juniper::DefaultScalarValue>,
+    ) -> SubscriptionStream<'a, Query> {
+        let executor = executor.as_owned_executor();
         let stream = tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(
             Duration::from_secs_f64(period).max(Duration::from_millis(200)),
         ))
+        .then(move |_| {
+            let executor = executor.clone();
+            async move { executor.as_executor().resolve_async(&(), &Query).await }
+        })
+        .scan(None, |state, q| {
+            if let Some(s) = state {
+                if s == &q {
+                    return std::future::ready(Some(None));
+                }
+            }
+            *state = Some(q.clone());
+            std::future::ready(Some(Some(q)))
+        })
+        .filter_map(|opt| std::future::ready(opt))
+        // Unfortunately, we now have to re-execute the same query again because I can't figure out
+        // how to return a juniper::Value...
         .map(move |_| Ok(Query));
         Box::pin(stream)
     }
