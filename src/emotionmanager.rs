@@ -7,6 +7,7 @@ pub const EMOTION_RESET_TIMER_SECS: u64 = 60;
 #[derive(Default, Clone, Debug)]
 pub struct EmotionContainer(std::sync::Arc<tokio::sync::Mutex<logic::Emotion>>);
 
+#[allow(dead_code)]
 impl EmotionContainer {
     pub fn new() -> Self {
         Default::default()
@@ -30,6 +31,7 @@ impl EmotionContainer {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum EmotionCommand {
     Get {
         resp: Responder<logic::Emotion>,

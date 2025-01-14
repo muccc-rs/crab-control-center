@@ -53,8 +53,6 @@ fn main() {
         #[cfg(feature = "visuals")]
         let visuals = visuals.clone();
         move || {
-            let start = std::time::Instant::now();
-
             loop {
                 #[cfg(feature = "fieldbus")]
                 if let Some(fieldbus) = &mut fieldbus {
