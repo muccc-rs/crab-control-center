@@ -125,10 +125,10 @@ async fn root(State(_): State<AppState>) -> impl IntoResponse {
 
 async fn graphql(
     axum::Extension(schema): axum::Extension<Arc<crate::graphql::Schema>>,
-    axum::Extension(context): axum::Extension<Arc<RwLock<crate::graphql::Context>>>,
+    axum::Extension(context): axum::Extension<crate::graphql::Context>,
     JuniperRequest(req): JuniperRequest,
 ) -> JuniperResponse {
-    JuniperResponse(req.execute(&*schema, &*context.read().await).await)
+    JuniperResponse(req.execute(&*schema, &context).await)
 }
 
 fn app() -> axum::Router<AppState> {
@@ -167,7 +167,7 @@ struct AppState {
 pub async fn run_http_server(
     emotion_ch_tx: tokio::sync::mpsc::Sender<emotionmanager::EmotionCommand>,
     emotionmanager: emotionmanager::EmotionManager,
-    graphql_context: Arc<RwLock<crate::graphql::Context>>,
+    graphql_context: crate::graphql::Context,
 ) {
     let state = AppState { emotion_ch_tx };
     let router = app()

@@ -48,13 +48,15 @@ impl<T: PartialEq> BaseTimer<T> {
 #[juniper::graphql_object(context = crate::graphql::Context)]
 #[graphql(name = "BaseTimer")]
 impl<T: PartialEq> BaseTimer<T> {
-    fn time(&self, context: &crate::graphql::Context) -> Option<f64> {
-        self.change.map(|tt| (context.now - tt).as_secs_f64())
+    async fn time(&self, context: &crate::graphql::Context) -> Option<f64> {
+        let now = context.inner.read().await.now;
+        self.change.map(|tt| (now - tt).as_secs_f64())
     }
 
     #[graphql(name = "timer")]
-    fn timer_graphql(&self, preset: f64, context: &crate::graphql::Context) -> bool {
-        self.timer(context.now, std::time::Duration::from_secs_f64(preset))
+    async fn timer_graphql(&self, preset: f64, context: &crate::graphql::Context) -> bool {
+        let now = context.inner.read().await.now;
+        self.timer(now, std::time::Duration::from_secs_f64(preset))
     }
 }
 
