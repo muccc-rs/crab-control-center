@@ -109,13 +109,16 @@ fn main() {
 
                 logic.inputs_mut().emotion = Some(emotioncontainer.blocking_get());
 
-                logic.run(std::time::Instant::now());
+                let now = std::time::Instant::now();
+                logic.run(now);
 
                 // Mirror the logic state into the graphql context so it can be queried remotely.
-                graphql_context
-                    .blocking_write()
-                    .logic_image
-                    .clone_from(&logic);
+                {
+                    let mut graphql_context = graphql_context.blocking_write();
+
+                    graphql_context.logic_image.clone_from(&logic);
+                    graphql_context.now = now;
+                }
 
                 std::thread::sleep(std::time::Duration::from_millis(50));
             }
