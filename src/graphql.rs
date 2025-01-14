@@ -14,6 +14,7 @@ pub struct Context {
     pub logic_image: crate::logic::Logic,
     pub pii: [u8; PII_SIZE],
     pub piq: [u8; PIQ_SIZE],
+    pub now: std::time::Instant,
 }
 
 impl Default for Context {
@@ -22,6 +23,7 @@ impl Default for Context {
             logic_image: Default::default(),
             pii: [0u8; PII_SIZE],
             piq: [0u8; PIQ_SIZE],
+            now: std::time::Instant::now(),
         }
     }
 }

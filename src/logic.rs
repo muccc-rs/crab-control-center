@@ -51,6 +51,7 @@ pub struct LogicOutputs {
 
 #[derive(Debug, Default, Clone, juniper::GraphQLObject)]
 #[graphql(name = "LogicState")]
+#[graphql(context = crate::graphql::Context)]
 pub struct Logic {
     #[graphql(ignore)]
     inp: LogicInputs,
@@ -58,16 +59,12 @@ pub struct Logic {
     out: LogicOutputs,
 
     blink: bool,
-    #[graphql(ignore)]
     t_blink: timers::BaseTimer<bool>,
 
     close_mouth: bool,
-    #[graphql(ignore)]
     t_close_mouth: timers::BaseTimer<bool>,
 
-    #[graphql(ignore)]
     t_info: timers::BaseTimer<bool>,
-    #[graphql(ignore)]
     t_emotion: timers::BaseTimer<Option<Emotion>>,
 }
 
