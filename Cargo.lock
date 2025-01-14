@@ -621,6 +621,7 @@ name = "crab-control-center"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "cfg-if",
  "eframe",
  "egui",
  "egui_extras",

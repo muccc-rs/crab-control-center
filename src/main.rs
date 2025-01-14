@@ -58,6 +58,8 @@ fn main() {
             loop {
                 #[cfg(feature = "fieldbus")]
                 if let Some(fieldbus) = &mut fieldbus {
+                    let mut graphql_context = graphql_context.blocking_write();
+
                     fieldbus.with_process_images(|pii, piq| {
                         use process_image::{tag, tag_mut};
 
@@ -96,6 +98,9 @@ fn main() {
 
                         // -KEC1-K7 AI1
                         logic.inputs_mut().pressure_fullscale = tag!(pii, W, 2).into();
+
+                        graphql_context.pii.copy_from_slice(pii);
+                        graphql_context.piq.copy_from_slice(piq);
                     });
                 }
 
