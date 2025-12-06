@@ -12,7 +12,7 @@ env_logger = { version = "0.11.5", default-features = false, features = [
     "auto-color",
 ] }
 log = "0.4.22"
-process-image = "=0.2.1"
+process-image = "0.2.3"
 
 profirust = { version = "0.5.0", default-features = false, features = [
     "phy-serial",

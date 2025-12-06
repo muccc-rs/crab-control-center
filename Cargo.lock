@@ -2599,9 +2599,9 @@ dependencies = [
 
 [[package]]
 name = "process-image"
-version = "0.2.1"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c1de5542ea7a8e8654e93e3d00b28c1f3318f95b0f270240685c9eeeb300986"
+checksum = "7b02ee7a583821869964e6bf71b1dd4603029236c60542ba32892112b6d288fc"
 
 [[package]]
 name = "profiling"
