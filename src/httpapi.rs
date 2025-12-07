@@ -118,16 +118,40 @@ async fn post_crab_talk(
     }
 }
 
+#[derive(utoipa::ToSchema, serde::Deserialize)]
+struct ApiInflationMessage {
+    token: String,
+}
+
 #[utoipa::path(post,
     path = "/crab/inflate",
     summary = "Forcefully inflate the crab!",
+    request_body = ApiInflationMessage,
     responses(
-        (status = 200, description = "Success!", body = ())
-))]
-async fn post_crab_inflate(State(state): State<AppState>) -> impl IntoResponse {
+        (status = 200, description = "Success!", body = ()),
+        (status = 403, description = "Invalid token was sent", body = ()),
+    ),
+)]
+async fn post_crab_inflate(
+    State(state): State<AppState>,
+    Json(payload): Json<ApiInflationMessage>,
+) -> impl IntoResponse {
+    use sha1::Digest;
+
+    let mut hasher = sha1::Sha1::new();
+    hasher.update(payload.token.as_bytes());
+    let res = hasher.finalize();
+
+    // "Security"
+    if res[..] != hex_literal::hex!("49203b5f12f55a6fe51a042b53a67d035f7971bb") {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
     state
         .trigger_fan
-        .store(true, std::sync::atomic::Ordering::SeqCst)
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+
+    Ok(StatusCode::OK)
 }
 
 #[utoipa::path(post,
