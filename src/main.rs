@@ -90,9 +90,13 @@ fn main() {
                         *tag_mut!(piq, X, 4, 0) = !logic.outputs().indicator_fault;
                         // -KEC1-K5 DO2
                         *tag_mut!(piq, X, 4, 1) = logic.outputs().indicator_refill_air;
+                        // -KEC1-K5 DO3
+                        *tag_mut!(piq, X, 4, 2) = logic.outputs().run_fan;
 
                         // -KEC1-K6 DI1
                         logic.inputs_mut().dc_ok = tag!(pii, X, 1, 0);
+                        // -KEC1-K6 DI2
+                        logic.inputs_mut().estop_active = tag!(pii, X, 1, 1);
 
                         // -KEC1-K7 AI1
                         logic.inputs_mut().pressure_fullscale = tag!(pii, W, 2).into();
