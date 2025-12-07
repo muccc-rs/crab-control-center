@@ -130,6 +130,22 @@ impl PulseTimer {
     }
 }
 
+#[juniper::graphql_object(context = crate::graphql::Context)]
+#[graphql(name = "PulseTimer")]
+impl PulseTimer {
+    async fn time(&self, context: &crate::graphql::Context) -> Option<f64> {
+        self.base.time(context).await
+    }
+
+    #[graphql(name = "timer")]
+    async fn timer_graphql(&self, preset: f64, context: &crate::graphql::Context) -> bool {
+        let now = context.inner.read().await.now;
+        !self
+            .base
+            .timer(now, std::time::Duration::from_secs_f64(preset))
+    }
+}
+
 pub trait TimeExt {
     fn millis(&self) -> time::Duration;
     fn secs(&self) -> time::Duration;
