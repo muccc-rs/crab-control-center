@@ -40,6 +40,9 @@ pub struct LogicInputs {
     pub emotion: Option<Emotion>,
     pub dc_ok: bool,
     pub pressure_fullscale: i32,
+    pub estop_active: bool,
+    pub trigger_fan: bool,
+    pub reset_fault: bool,
 }
 
 #[derive(Debug, Default, Clone, juniper::GraphQLObject)]
@@ -47,6 +50,7 @@ pub struct LogicOutputs {
     pub channels: Channels,
     pub indicator_fault: bool,
     pub indicator_refill_air: bool,
+    pub run_fan: bool,
 }
 
 #[derive(Debug, Default, Clone, juniper::GraphQLObject)]
@@ -64,8 +68,12 @@ pub struct Logic {
     close_mouth: bool,
     t_close_mouth: timers::BaseTimer<bool>,
 
+    t_fan: timers::PulseTimer,
     t_info: timers::BaseTimer<bool>,
     t_emotion: timers::BaseTimer<Option<Emotion>>,
+
+    faulted: bool,
+    reset_fault_last: bool,
 }
 
 impl Logic {
@@ -182,7 +190,18 @@ impl Logic {
         let pressure_fault = self.inp.pressure_fullscale & 7 != 0;
         let pressure_low = !pressure_fault && self.inp.pressure_fullscale < 16;
 
-        self.out.indicator_fault = pressure_fault;
+        let reset_fault_edge = self.inp.reset_fault && !self.reset_fault_last;
+        self.reset_fault_last = self.inp.reset_fault;
+        self.faulted = (self.faulted && !reset_fault_edge)
+            || pressure_fault
+            || self.inp.estop_active
+            || !self.inp.dc_ok;
+
+        // Fan
+        let t_fan = self.t_fan.run(now, self.inp.trigger_fan, 5.secs());
+        self.out.run_fan = t_fan.timing && !self.faulted;
+
+        self.out.indicator_fault = self.faulted;
         self.out.indicator_refill_air = pressure_low;
 
         if self.t_info.timer(now, 60.secs()) {
