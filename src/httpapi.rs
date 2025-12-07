@@ -118,6 +118,30 @@ async fn post_crab_talk(
     }
 }
 
+#[utoipa::path(post,
+    path = "/crab/inflate",
+    summary = "Forcefully inflate the crab!",
+    responses(
+        (status = 200, description = "Success!", body = ())
+))]
+async fn post_crab_inflate(State(state): State<AppState>) -> impl IntoResponse {
+    state
+        .trigger_fan
+        .store(true, std::sync::atomic::Ordering::SeqCst)
+}
+
+#[utoipa::path(post,
+    path = "/crab/fault_reset",
+    summary = "Reset faults of the crab controller",
+    responses(
+        (status = 200, description = "Success!", body = ())
+))]
+async fn post_crab_fault_reset(State(state): State<AppState>) -> impl IntoResponse {
+    state
+        .fault_reset
+        .store(true, std::sync::atomic::Ordering::SeqCst)
+}
+
 async fn root(State(_): State<AppState>) -> impl IntoResponse {
     Html(include_str!("crab.html"))
 }
@@ -156,6 +180,8 @@ fn app() -> axum::Router<AppState> {
         utoipa_axum::router::OpenApiRouter::with_openapi(ApiDoc::openapi())
             .routes(routes)
             .routes(utoipa_axum::routes!(post_crab_talk))
+            .routes(utoipa_axum::routes!(post_crab_inflate))
+            .routes(utoipa_axum::routes!(post_crab_fault_reset))
             .route(
                 "/graphql",
                 on(MethodFilter::GET.or(MethodFilter::POST), graphql),
@@ -181,17 +207,18 @@ fn app() -> axum::Router<AppState> {
 }
 
 #[derive(Clone)]
-struct AppState {
+pub struct AppState {
     pub emotion_ch_tx: tokio::sync::mpsc::Sender<emotionmanager::EmotionCommand>,
+    pub fault_reset: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    pub trigger_fan: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
 #[tokio::main]
 pub async fn run_http_server(
-    emotion_ch_tx: tokio::sync::mpsc::Sender<emotionmanager::EmotionCommand>,
+    state: AppState,
     emotionmanager: emotionmanager::EmotionManager,
     graphql_context: crate::graphql::Context,
 ) {
-    let state = AppState { emotion_ch_tx };
     let router = app()
         .with_state(state)
         .layer(axum::Extension(Arc::new(crate::graphql::schema())))

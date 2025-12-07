@@ -16,13 +16,20 @@ fn main() {
     let emotioncontainer = emotionmanager::EmotionContainer::new();
     let emotionmanager = emotionmanager::EmotionManager::new(emotioncontainer.clone(), emotion_rx);
 
+    let trigger_fan = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let fault_reset = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+
     let graphql_context = graphql::Context::default();
 
     std::thread::spawn({
-        let emotion_tx = emotion_tx.clone();
+        let app_state = httpapi::AppState {
+            emotion_ch_tx: emotion_tx.clone(),
+            fault_reset: fault_reset.clone(),
+            trigger_fan: trigger_fan.clone(),
+        };
         let graphql_context = graphql_context.clone();
         move || {
-            httpapi::run_http_server(emotion_tx, emotionmanager, graphql_context);
+            httpapi::run_http_server(app_state, emotionmanager, graphql_context);
         }
     });
 
@@ -116,7 +123,15 @@ fn main() {
                 #[cfg(feature = "visuals")]
                 visuals.update_channels(&logic.outputs().channels);
 
-                logic.inputs_mut().emotion = Some(emotioncontainer.blocking_get());
+                {
+                    let inputs = logic.inputs_mut();
+
+                    inputs.emotion = Some(emotioncontainer.blocking_get());
+                    inputs.trigger_fan =
+                        trigger_fan.swap(false, std::sync::atomic::Ordering::SeqCst);
+                    inputs.reset_fault =
+                        fault_reset.swap(false, std::sync::atomic::Ordering::SeqCst);
+                }
 
                 let now = std::time::Instant::now();
                 logic.run(now);
