@@ -105,6 +105,13 @@ fn main() {
                         graphql_context.piq.copy_from_slice(piq);
                     });
                 }
+                #[cfg(not(feature = "fieldbus"))]
+                {
+                    // Some sane defaults when no actual hardware is present
+                    logic.inputs_mut().dc_ok = true;
+                    logic.inputs_mut().estop_active = false;
+                    logic.inputs_mut().pressure_fullscale = 64;
+                }
 
                 #[cfg(feature = "visuals")]
                 visuals.update_channels(&logic.outputs().channels);
