@@ -9,8 +9,6 @@ use axum::{
 };
 use juniper_axum::{extract::JuniperRequest, response::JuniperResponse};
 use utoipa::OpenApi;
-use utoipa_redoc::Servable as RedocServable;
-use utoipa_scalar::Servable as ScalarServable;
 
 use crate::{
     emotionmanager,
@@ -258,14 +256,9 @@ fn app() -> axum::Router<AppState> {
             .route("/", get(root))
             .split_for_parts();
 
-    let router = router
-        .merge(
-            utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
-                .url("/api-docs/openapi.json", api.clone()),
-        )
-        .merge(utoipa_redoc::Redoc::with_url("/redoc", api.clone()))
-        .merge(utoipa_rapidoc::RapiDoc::new("/api-docs/openapi.json").path("/rapidoc"))
-        .merge(utoipa_scalar::Scalar::with_url("/scalar", api));
+    let router = router.merge(
+        utoipa_swagger_ui::SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api.clone()),
+    );
 
     router
 }
