@@ -85,6 +85,14 @@ impl TimerOn {
     }
 }
 
+#[juniper::graphql_object(context = crate::graphql::Context)]
+#[graphql(name = "TimerOn")]
+impl TimerOn {
+    async fn time(&self, context: &crate::graphql::Context) -> Option<f64> {
+        self.base.time(context).await
+    }
+}
+
 #[derive(Default, Debug, Clone)]
 pub struct TimerOff {
     base: BaseTimer<bool>,
@@ -101,6 +109,14 @@ impl TimerOff {
             done: value || !self.base.timer(now, preset),
             timing: !value && !self.base.timer(now, preset),
         }
+    }
+}
+
+#[juniper::graphql_object(context = crate::graphql::Context)]
+#[graphql(name = "TimerOff")]
+impl TimerOff {
+    async fn time(&self, context: &crate::graphql::Context) -> Option<f64> {
+        self.base.time(context).await
     }
 }
 
