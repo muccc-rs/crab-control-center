@@ -106,6 +106,8 @@ pub struct Logic {
     pressure_low: bool,
     pressure_high: bool,
     pressure_high_high: bool,
+
+    pressure_low_low_last: bool,
 }
 
 impl Logic {
@@ -241,13 +243,16 @@ impl Logic {
             self.pressure_high = pressure_mbar >= self.inp.pressure_limits.high;
         }
 
+        let low_low_edge = !self.pressure_low_low_last & self.pressure_low_low;
+        self.pressure_low_low_last = self.pressure_low_low;
+
         // Maximum fan runtime
         let fan_overtime = self.out.run_fan && self.t_fan.timer(now, 60.secs());
 
         self.faulted = (self.faulted && !reset_fault_edge)
             || pressure_fault
             || fan_overtime
-            || self.pressure_low_low
+            || low_low_edge
             || self.pressure_high_high
             || self.inp.estop_active
             || !self.inp.dc_ok;
