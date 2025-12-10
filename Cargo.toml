@@ -53,3 +53,9 @@ hex-literal = "1.1.0"
 visuals = ["dep:eframe", "dep:egui", "dep:egui_extras"]
 fieldbus = ["dep:profirust"]
 default = ["visuals"]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
