@@ -27,7 +27,7 @@ egui_extras = { version = "0.30.0", optional = true, features = [
     "image",
 ], default-features = false }
 
-axum = { version = "0.8", default-features = false, features = ["http1"] }
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
 tokio = { version = "1.42.0", features = ["rt-multi-thread", "parking_lot"] }
 utoipa = { version = "5.3.0", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
