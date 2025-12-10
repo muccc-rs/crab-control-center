@@ -271,7 +271,7 @@ pub struct AppState {
     pub pressure_limits_tx: tokio::sync::mpsc::Sender<ApiPressureLimitsMessage>,
 }
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 pub async fn run_http_server(
     state: AppState,
     emotionmanager: emotionmanager::EmotionManager,
