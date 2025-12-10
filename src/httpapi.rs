@@ -119,6 +119,45 @@ async fn post_crab_talk(
 }
 
 #[derive(utoipa::ToSchema, serde::Deserialize)]
+pub struct ApiPressureLimitsMessage {
+    pub token: String,
+    pub low_low: Option<f64>,
+    pub low: Option<f64>,
+    pub high: Option<f64>,
+    pub high_high: Option<f64>,
+}
+
+#[utoipa::path(post,
+    path = "/crab/set-pressure-limits",
+    summary = "Set crab air pressure limits",
+    request_body = ApiPressureLimitsMessage,
+    responses(
+        (status = 200, description = "Success!", body = ()),
+        (status = 403, description = "Invalid token was sent", body = ()),
+    ),
+)]
+async fn post_crab_set_pressure_limits(
+    State(state): State<AppState>,
+    Json(payload): Json<ApiPressureLimitsMessage>,
+) -> impl IntoResponse {
+    use sha1::Digest;
+
+    let mut hasher = sha1::Sha1::new();
+    hasher.update(payload.token.as_bytes());
+    let res = hasher.finalize();
+
+    // "Security"
+    if res[..] != hex_literal::hex!("49203b5f12f55a6fe51a042b53a67d035f7971bb") {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
+    match state.pressure_limits_tx.send(payload).await {
+        Ok(_) => Ok(StatusCode::OK),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+#[derive(utoipa::ToSchema, serde::Deserialize)]
 struct ApiInflationMessage {
     token: String,
 }
@@ -206,6 +245,7 @@ fn app() -> axum::Router<AppState> {
             .routes(utoipa_axum::routes!(post_crab_talk))
             .routes(utoipa_axum::routes!(post_crab_inflate))
             .routes(utoipa_axum::routes!(post_crab_fault_reset))
+            .routes(utoipa_axum::routes!(post_crab_set_pressure_limits))
             .route(
                 "/graphql",
                 on(MethodFilter::GET.or(MethodFilter::POST), graphql),
@@ -235,6 +275,7 @@ pub struct AppState {
     pub emotion_ch_tx: tokio::sync::mpsc::Sender<emotionmanager::EmotionCommand>,
     pub fault_reset: std::sync::Arc<std::sync::atomic::AtomicBool>,
     pub trigger_fan: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    pub pressure_limits_tx: tokio::sync::mpsc::Sender<ApiPressureLimitsMessage>,
 }
 
 #[tokio::main]
