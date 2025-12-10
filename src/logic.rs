@@ -35,6 +35,25 @@ pub struct Channels {
     pub mouth_bottom: bool,
 }
 
+#[derive(Debug, Clone, juniper::GraphQLObject)]
+pub struct PressureLimits {
+    pub low_low: f64,
+    pub low: f64,
+    pub high: f64,
+    pub high_high: f64,
+}
+
+impl Default for PressureLimits {
+    fn default() -> Self {
+        Self {
+            low_low: 0.08,
+            low: 0.25,
+            high: 0.35,
+            high_high: 0.4,
+        }
+    }
+}
+
 #[derive(Debug, Default, Clone, juniper::GraphQLObject)]
 pub struct LogicInputs {
     pub emotion: Option<Emotion>,
@@ -43,6 +62,7 @@ pub struct LogicInputs {
     pub estop_active: bool,
     pub trigger_fan: bool,
     pub reset_fault: bool,
+    pub pressure_limits: PressureLimits,
 }
 
 #[derive(Debug, Default, Clone, juniper::GraphQLObject)]
@@ -68,12 +88,24 @@ pub struct Logic {
     close_mouth: bool,
     t_close_mouth: timers::BaseTimer<bool>,
 
-    t_fan: timers::PulseTimer,
+    t_fan: timers::BaseTimer<bool>,
+    run_fan: bool,
+
     t_info: timers::BaseTimer<bool>,
     t_emotion: timers::BaseTimer<Option<Emotion>>,
 
     faulted: bool,
     reset_fault_last: bool,
+
+    /// Pressure converted to engineering units
+    ///
+    /// None when no value is available
+    pressure_mbar: Option<f64>,
+
+    pressure_low_low: bool,
+    pressure_low: bool,
+    pressure_high: bool,
+    pressure_high_high: bool,
 }
 
 impl Logic {
@@ -99,6 +131,7 @@ impl Logic {
         self.t_blink.run(now, self.blink);
         self.t_close_mouth.run(now, self.close_mouth);
         self.t_emotion.run(now, self.inp.emotion);
+        self.t_fan.run(now, self.out.run_fan);
 
         self.out.channels = Channels {
             bottom_front: true,
@@ -186,23 +219,51 @@ impl Logic {
             self.out.channels.mouth_mid = true;
         }
 
-        // Disconnected pressure sensor
-        let pressure_fault = self.inp.pressure_fullscale & 7 != 0;
-        let pressure_low = !pressure_fault && self.inp.pressure_fullscale < 16;
-
         let reset_fault_edge = self.inp.reset_fault && !self.reset_fault_last;
         self.reset_fault_last = self.inp.reset_fault;
+
+        // Disconnected pressure sensor
+        let pressure_fault = self.inp.pressure_fullscale & 7 != 0;
+        self.pressure_mbar = if !pressure_fault {
+            Some(f64::from(self.inp.pressure_fullscale) * 250. / 65535.)
+        } else {
+            None
+        };
+
+        if let Some(pressure_mbar) = self.pressure_mbar {
+            // LOWLOW and HIGHHIGH alarms are sticky and need to be cleared
+            self.pressure_low_low = (self.pressure_low_low && !reset_fault_edge)
+                || (pressure_mbar <= self.inp.pressure_limits.low_low);
+            self.pressure_high_high = (self.pressure_high_high && !reset_fault_edge)
+                || (pressure_mbar >= self.inp.pressure_limits.high_high);
+
+            self.pressure_low = pressure_mbar <= self.inp.pressure_limits.low;
+            self.pressure_high = pressure_mbar >= self.inp.pressure_limits.high;
+        }
+
+        // Maximum fan runtime
+        let fan_overtime = self.out.run_fan && self.t_fan.timer(now, 60.secs());
+
         self.faulted = (self.faulted && !reset_fault_edge)
             || pressure_fault
+            || fan_overtime
+            || self.pressure_low_low
+            || self.pressure_high_high
             || self.inp.estop_active
             || !self.inp.dc_ok;
 
         // Fan
-        let t_fan = self.t_fan.run(now, self.inp.trigger_fan, 5.secs());
-        self.out.run_fan = t_fan.timing && !self.faulted;
+        let fan_cooldown = !self.out.run_fan && self.t_fan.timer(now, 10.secs());
+        let start_fan = (self.pressure_low || self.inp.trigger_fan) && fan_cooldown;
+        self.run_fan = (self.run_fan || start_fan) && !self.pressure_high;
+        let new_run_fan = self.run_fan && !self.faulted;
+        if new_run_fan != self.out.run_fan {
+            log::info!("FAN State: {new_run_fan}");
+        }
+        self.out.run_fan = new_run_fan;
 
         self.out.indicator_fault = self.faulted;
-        self.out.indicator_refill_air = pressure_low;
+        self.out.indicator_refill_air = self.pressure_low;
 
         if self.t_info.timer(now, 60.secs()) {
             log::info!("Pressure: {}", self.inp.pressure_fullscale);
