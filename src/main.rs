@@ -12,6 +12,7 @@ mod visuals;
 
 fn main() {
     let (emotion_tx, emotion_rx) = tokio::sync::mpsc::channel::<EmotionCommand>(32);
+    let (pressure_limits_tx, mut pressure_limits_rx) = tokio::sync::mpsc::channel(8);
 
     let emotioncontainer = emotionmanager::EmotionContainer::new();
     let emotionmanager = emotionmanager::EmotionManager::new(emotioncontainer.clone(), emotion_rx);
@@ -26,6 +27,7 @@ fn main() {
             emotion_ch_tx: emotion_tx.clone(),
             fault_reset: fault_reset.clone(),
             trigger_fan: trigger_fan.clone(),
+            pressure_limits_tx,
         };
         let graphql_context = graphql_context.clone();
         move || {
@@ -131,6 +133,25 @@ fn main() {
                         trigger_fan.swap(false, std::sync::atomic::Ordering::SeqCst);
                     inputs.reset_fault =
                         fault_reset.swap(false, std::sync::atomic::Ordering::SeqCst);
+
+                    if let Ok(limits) = pressure_limits_rx.try_recv() {
+                        if let Some(low_low) = limits.low_low {
+                            log::info!("Updating LOWLOW pressure limit to {low_low:.3} mbar");
+                            inputs.pressure_limits.low_low = low_low;
+                        }
+                        if let Some(low) = limits.low {
+                            log::info!("Updating LOW pressure limit to {low:.3} mbar");
+                            inputs.pressure_limits.low = low;
+                        }
+                        if let Some(high) = limits.high {
+                            log::info!("Updating HIGH pressure limit to {high:.3} mbar");
+                            inputs.pressure_limits.high = high;
+                        }
+                        if let Some(high_high) = limits.high_high {
+                            log::info!("Updating HIGHHIGH pressure limit to {high_high:.3} mbar");
+                            inputs.pressure_limits.high_high = high_high;
+                        }
+                    }
                 }
 
                 let now = std::time::Instant::now();
