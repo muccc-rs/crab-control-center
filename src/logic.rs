@@ -46,10 +46,10 @@ pub struct PressureLimits {
 impl Default for PressureLimits {
     fn default() -> Self {
         Self {
-            low_low: 0.08,
-            low: 0.25,
-            high: 0.35,
-            high_high: 0.4,
+            low_low: 0.02,
+            low: 0.3,
+            high: 0.45,
+            high_high: 0.7,
         }
     }
 }
