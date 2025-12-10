@@ -235,30 +235,30 @@ async fn graphql_subscriptions(
 }
 
 fn app() -> axum::Router<AppState> {
-    let routes: utoipa_axum::router::UtoipaMethodRouter<AppState> =
-        utoipa_axum::routes!(post_emotion);
     let (router, api): (axum::Router<AppState>, utoipa::openapi::OpenApi) =
         utoipa_axum::router::OpenApiRouter::with_openapi(ApiDoc::openapi())
-            .routes(routes)
+            .routes(utoipa_axum::routes!(post_emotion))
             .routes(utoipa_axum::routes!(post_crab_talk))
             .routes(utoipa_axum::routes!(post_crab_inflate))
             .routes(utoipa_axum::routes!(post_crab_fault_reset))
             .routes(utoipa_axum::routes!(post_crab_set_pressure_limits))
-            .route(
-                "/graphql",
-                on(MethodFilter::GET.or(MethodFilter::POST), graphql),
-            )
-            .route("/graphql-subscriptions", get(graphql_subscriptions))
-            .route(
-                "/graphiql",
-                get(juniper_axum::graphiql("/graphql", "/graphql-subscriptions")),
-            )
-            .route("/", get(root))
             .split_for_parts();
 
-    let router = router.merge(
-        utoipa_swagger_ui::SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api.clone()),
-    );
+    let router = router
+        .route(
+            "/graphql",
+            on(MethodFilter::GET.or(MethodFilter::POST), graphql),
+        )
+        .route("/graphql-subscriptions", get(graphql_subscriptions))
+        .route(
+            "/graphiql",
+            get(juniper_axum::graphiql("/graphql", "/graphql-subscriptions")),
+        )
+        .route("/", get(root))
+        .merge(
+            utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
+                .url("/api-docs/openapi.json", api.clone()),
+        );
 
     router
 }
