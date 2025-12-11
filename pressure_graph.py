@@ -24,8 +24,8 @@ def main():
     client = Client(transport=transport)
 
     for result in client.subscribe(SUBSCRIPTION):
-        pressure = (result["watch"]["inputs"]["pressureFullscale"]) / (65535)
-        progress = "#" * (int(pressure * 5 * 70))
+        pressure = (result["watch"]["inputs"]["pressureFullscale"]) / (65535) * 250
+        progress = "#" * (int(pressure * 70))
         print(f"{pressure:.4f} {progress}")
 
 
