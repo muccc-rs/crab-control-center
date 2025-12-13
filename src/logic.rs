@@ -269,7 +269,7 @@ impl Logic {
         self.out.run_fan = new_run_fan;
 
         self.out.indicator_fault = self.faulted;
-        self.out.indicator_refill_air = self.pressure_low;
+        self.out.indicator_refill_air = self.run_fan;
 
         if self.t_info.timer(now, 60.secs()) {
             log::info!("Pressure: {:.3} mbar", self.pressure_mbar.unwrap_or(-1.));
