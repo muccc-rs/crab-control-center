@@ -234,6 +234,22 @@ async fn graphql_subscriptions(
         })
 }
 
+fn setup_metrics_recorder() -> metrics_exporter_prometheus::PrometheusHandle {
+    let recorder_handle = metrics_exporter_prometheus::PrometheusBuilder::new()
+        .install_recorder()
+        .unwrap();
+
+    let upkeep_handle = recorder_handle.clone();
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+            upkeep_handle.run_upkeep();
+        }
+    });
+
+    recorder_handle
+}
+
 fn app() -> axum::Router<AppState> {
     let (router, api): (axum::Router<AppState>, utoipa::openapi::OpenApi) =
         utoipa_axum::router::OpenApiRouter::with_openapi(ApiDoc::openapi())
@@ -259,6 +275,12 @@ fn app() -> axum::Router<AppState> {
             utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
                 .url("/api-docs/openapi.json", api.clone()),
         );
+
+    let recorder_handle = setup_metrics_recorder();
+    let router = router.route(
+        "/metrics",
+        get(move || std::future::ready(recorder_handle.render())),
+    );
 
     router
 }

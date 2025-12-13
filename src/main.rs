@@ -63,6 +63,8 @@ fn main() {
         let visuals = visuals.clone();
         move || {
             loop {
+                let start = std::time::Instant::now();
+
                 #[cfg(feature = "fieldbus")]
                 if let Some(fieldbus) = &mut fieldbus {
                     let mut graphql_context = graphql_context.inner.blocking_write();
@@ -166,6 +168,9 @@ fn main() {
                 }
 
                 std::thread::sleep(std::time::Duration::from_millis(50));
+
+                let cycletime = std::time::Instant::now() - start;
+                metrics::histogram!("crab_logic_cycletime_seconds").record(cycletime.as_secs_f64());
             }
         }
     });

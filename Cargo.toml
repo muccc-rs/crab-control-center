@@ -42,6 +42,8 @@ juniper_graphql_ws = "0.4.0"
 tokio-stream = "0.1.17"
 sha1 = "0.10.6"
 hex-literal = "1.1.0"
+metrics = { version = "0.24.3", default-features = false }
+metrics-exporter-prometheus = { version = "0.18.1", default-features = false }
 
 [features]
 visuals = ["dep:eframe", "dep:egui", "dep:egui_extras"]
