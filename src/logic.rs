@@ -108,6 +108,9 @@ pub struct Logic {
     pressure_high_high: bool,
 
     pressure_low_low_last: bool,
+
+    #[graphql(ignore)]
+    last_fan_start: Option<std::time::Instant>,
 }
 
 impl Logic {
@@ -231,6 +234,11 @@ impl Logic {
         } else {
             None
         };
+        metrics::gauge!("crab_pressure_mbar").set(self.pressure_mbar.unwrap_or(-1.));
+        metrics::describe_gauge!(
+            "crab_pressure_mbar",
+            "Internal pressure of the crab in millibar."
+        );
 
         if let Some(pressure_mbar) = self.pressure_mbar {
             // LOWLOW and HIGHHIGH alarms are sticky and need to be cleared
@@ -257,16 +265,48 @@ impl Logic {
             || self.inp.estop_active
             || !self.inp.dc_ok;
 
+        metrics::gauge!("crab_faulted").set(f64::from(self.faulted));
+        metrics::describe_gauge!(
+            "crab_faulted",
+            "Whether the crab is currently in a fault condition."
+        );
+
         // Fan
         let fan_cooldown = !self.out.run_fan && self.t_fan.timer(now, 10.secs());
         let crab_deflated = !self.out.run_fan && self.t_fan.timer(now, (30 * 60).secs());
-        let start_fan = ((self.pressure_low && crab_deflated) || self.inp.trigger_fan) && fan_cooldown;
+        let start_fan =
+            ((self.pressure_low && crab_deflated) || self.inp.trigger_fan) && fan_cooldown;
         self.run_fan = (self.run_fan || start_fan) && !self.pressure_high;
         let new_run_fan = self.run_fan && !self.faulted;
+
+        let crab_fan_starts_total = metrics::counter!("crab_fan_starts_total");
+        metrics::describe_counter!(
+            "crab_fan_starts_total",
+            "Number of times the fan was started."
+        );
+
+        let crab_fan_runtime_seconds = metrics::histogram!("crab_fan_runtime_seconds");
+        metrics::describe_histogram!(
+            "crab_fan_runtime_seconds",
+            "How long the fan ran until it stopped again."
+        );
+
         if new_run_fan != self.out.run_fan {
             log::info!("FAN State: {new_run_fan}");
+            if new_run_fan {
+                crab_fan_starts_total.increment(1);
+                self.last_fan_start = Some(now);
+            } else {
+                if let Some(last_fan_start) = self.last_fan_start {
+                    let runtime = now - last_fan_start;
+                    crab_fan_runtime_seconds.record(runtime.as_secs_f64());
+                }
+            }
         }
         self.out.run_fan = new_run_fan;
+
+        metrics::gauge!("crab_fan_running").set(f64::from(self.out.run_fan));
+        metrics::describe_gauge!("crab_fan_running", "Whether the fan is currently running");
 
         self.out.indicator_fault = self.faulted;
         self.out.indicator_refill_air = self.run_fan;
