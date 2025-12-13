@@ -47,9 +47,9 @@ impl Default for PressureLimits {
     fn default() -> Self {
         Self {
             low_low: 0.02,
-            low: 0.3,
+            low: 0.2,
             high: 0.45,
-            high_high: 0.7,
+            high_high: 0.8,
         }
     }
 }
