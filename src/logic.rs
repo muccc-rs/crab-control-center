@@ -234,10 +234,10 @@ impl Logic {
         } else {
             None
         };
-        metrics::gauge!("crab_pressure_mbar").set(self.pressure_mbar.unwrap_or(-1.));
-        metrics::describe_gauge!(
+        metrics::histogram!("crab_pressure_mbar").record(self.pressure_mbar.unwrap_or(-1.));
+        metrics::describe_histogram!(
             "crab_pressure_mbar",
-            "Internal pressure of the crab in millibar."
+            "Internal pressure sensor samples of the crab in millibar."
         );
 
         if let Some(pressure_mbar) = self.pressure_mbar {
