@@ -107,6 +107,8 @@ pub struct Logic {
     pressure_high: bool,
     pressure_high_high: bool,
 
+    logic_initialized: bool,
+
     #[graphql(ignore)]
     last_fan_start: Option<std::time::Instant>,
 }
@@ -256,6 +258,7 @@ impl Logic {
             || fan_overtime
             || self.pressure_high_high
             || self.inp.estop_active
+            || !self.logic_initialized
             || !self.inp.dc_ok;
 
         metrics::gauge!("crab_faulted").set(f64::from(self.faulted));
@@ -308,5 +311,7 @@ impl Logic {
             log::info!("Pressure: {:.3} mbar", self.pressure_mbar.unwrap_or(-1.));
             self.t_info.trigger(now);
         }
+
+        self.logic_initialized = true;
     }
 }
