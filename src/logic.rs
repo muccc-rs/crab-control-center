@@ -107,8 +107,6 @@ pub struct Logic {
     pressure_high: bool,
     pressure_high_high: bool,
 
-    pressure_low_low_last: bool,
-
     #[graphql(ignore)]
     last_fan_start: Option<std::time::Instant>,
 }
@@ -241,18 +239,14 @@ impl Logic {
         );
 
         if let Some(pressure_mbar) = self.pressure_mbar {
-            // LOWLOW and HIGHHIGH alarms are sticky and need to be cleared
-            self.pressure_low_low = (self.pressure_low_low && !reset_fault_edge)
-                || (pressure_mbar <= self.inp.pressure_limits.low_low);
+            // HIGHHIGH alarm is sticky and need to be cleared
             self.pressure_high_high = (self.pressure_high_high && !reset_fault_edge)
                 || (pressure_mbar >= self.inp.pressure_limits.high_high);
 
+            self.pressure_low_low = pressure_mbar <= self.inp.pressure_limits.low_low;
             self.pressure_low = pressure_mbar <= self.inp.pressure_limits.low;
             self.pressure_high = pressure_mbar >= self.inp.pressure_limits.high;
         }
-
-        let low_low_edge = !self.pressure_low_low_last & self.pressure_low_low;
-        self.pressure_low_low_last = self.pressure_low_low;
 
         // Maximum fan runtime
         let fan_overtime = self.out.run_fan && self.t_fan.timer(now, 60.secs());
@@ -260,7 +254,6 @@ impl Logic {
         self.faulted = (self.faulted && !reset_fault_edge)
             || pressure_fault
             || fan_overtime
-            || low_low_edge
             || self.pressure_high_high
             || self.inp.estop_active
             || !self.inp.dc_ok;
