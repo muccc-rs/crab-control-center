@@ -97,6 +97,11 @@ fn main() {
                         // -KEC1-K3 DO3
                         *tag_mut!(piq, X, 2, 2) = logic.outputs().channels.spikes_right;
 
+                        // -KEC1-K4 DO1
+                        *tag_mut!(piq, X, 3, 0) = logic.outputs().channels.right_claw;
+                        // -KEC1-K4 DO2
+                        *tag_mut!(piq, X, 3, 1) = logic.outputs().channels.left_claw;
+
                         // -KEC1-K5 DO1 (inverted!)
                         *tag_mut!(piq, X, 4, 0) = !logic.outputs().indicator_fault;
                         // -KEC1-K5 DO2
