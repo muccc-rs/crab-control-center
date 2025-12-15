@@ -33,6 +33,14 @@ pub struct Channels {
     pub mouth_mid: bool,
     pub mouth_top: bool,
     pub mouth_bottom: bool,
+
+    // Limbs
+    pub right_claw: bool,
+    pub left_claw: bool,
+    // pub right_leg_front: bool,
+    // pub right_leg_back: bool,
+    // pub left_leg_front: bool,
+    // pub left_leg_back: bool,
 }
 
 #[derive(Debug, Clone, juniper::GraphQLObject)]
@@ -152,6 +160,9 @@ impl Logic {
             mouth_top: false,
             mouth_mid: true,
             mouth_bottom: true,
+
+            right_claw: true,
+            left_claw: true,
         };
 
         if !self.t_emotion.timer(now, 1.millis()) {
