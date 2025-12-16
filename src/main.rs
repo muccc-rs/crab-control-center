@@ -18,6 +18,7 @@ fn main() {
     let emotionmanager = emotionmanager::EmotionManager::new(emotioncontainer.clone(), emotion_rx);
 
     let trigger_fan = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let trigger_sleep = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let fault_reset = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
 
     let graphql_context = graphql::Context::default();
@@ -27,6 +28,7 @@ fn main() {
             emotion_ch_tx: emotion_tx.clone(),
             fault_reset: fault_reset.clone(),
             trigger_fan: trigger_fan.clone(),
+            trigger_sleep: trigger_sleep.clone(),
             pressure_limits_tx,
         };
         let graphql_context = graphql_context.clone();
@@ -138,6 +140,8 @@ fn main() {
                     inputs.emotion = Some(emotioncontainer.blocking_get());
                     inputs.trigger_fan =
                         trigger_fan.swap(false, std::sync::atomic::Ordering::SeqCst);
+                    inputs.trigger_sleep =
+                        trigger_sleep.swap(false, std::sync::atomic::Ordering::SeqCst);
                     inputs.reset_fault =
                         fault_reset.swap(false, std::sync::atomic::Ordering::SeqCst);
 
