@@ -57,7 +57,7 @@ impl Default for PressureLimits {
             low_low: 0.02,
             low: 0.2,
             high: 0.45,
-            high_high: 0.8,
+            high_high: 0.6,
         }
     }
 }
