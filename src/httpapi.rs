@@ -156,14 +156,14 @@ async fn post_crab_set_pressure_limits(
 }
 
 #[derive(utoipa::ToSchema, serde::Deserialize)]
-struct ApiInflationMessage {
+struct ApiTokenMessage {
     token: String,
 }
 
 #[utoipa::path(post,
     path = "/crab/inflate",
     summary = "Forcefully inflate the crab!",
-    request_body = ApiInflationMessage,
+    request_body = ApiTokenMessage,
     responses(
         (status = 200, description = "Success!", body = ()),
         (status = 403, description = "Invalid token was sent", body = ()),
@@ -171,7 +171,7 @@ struct ApiInflationMessage {
 )]
 async fn post_crab_inflate(
     State(state): State<AppState>,
-    Json(payload): Json<ApiInflationMessage>,
+    Json(payload): Json<ApiTokenMessage>,
 ) -> impl IntoResponse {
     use sha1::Digest;
 
@@ -186,6 +186,37 @@ async fn post_crab_inflate(
 
     state
         .trigger_fan
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+
+    Ok(StatusCode::OK)
+}
+
+#[utoipa::path(post,
+    path = "/crab/sleep",
+    summary = "Put the crab to sleep.",
+    request_body = ApiTokenMessage,
+    responses(
+        (status = 200, description = "Success!", body = ()),
+        (status = 403, description = "Invalid token was sent", body = ()),
+    ),
+)]
+async fn post_crab_sleep(
+    State(state): State<AppState>,
+    Json(payload): Json<ApiTokenMessage>,
+) -> impl IntoResponse {
+    use sha1::Digest;
+
+    let mut hasher = sha1::Sha1::new();
+    hasher.update(payload.token.as_bytes());
+    let res = hasher.finalize();
+
+    // "Security"
+    if res[..] != hex_literal::hex!("49203b5f12f55a6fe51a042b53a67d035f7971bb") {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
+    state
+        .trigger_sleep
         .store(true, std::sync::atomic::Ordering::SeqCst);
 
     Ok(StatusCode::OK)
@@ -256,6 +287,7 @@ fn app() -> axum::Router<AppState> {
             .routes(utoipa_axum::routes!(post_emotion))
             .routes(utoipa_axum::routes!(post_crab_talk))
             .routes(utoipa_axum::routes!(post_crab_inflate))
+            .routes(utoipa_axum::routes!(post_crab_sleep))
             .routes(utoipa_axum::routes!(post_crab_fault_reset))
             .routes(utoipa_axum::routes!(post_crab_set_pressure_limits))
             .split_for_parts();
@@ -290,6 +322,7 @@ pub struct AppState {
     pub emotion_ch_tx: tokio::sync::mpsc::Sender<emotionmanager::EmotionCommand>,
     pub fault_reset: std::sync::Arc<std::sync::atomic::AtomicBool>,
     pub trigger_fan: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    pub trigger_sleep: std::sync::Arc<std::sync::atomic::AtomicBool>,
     pub pressure_limits_tx: tokio::sync::mpsc::Sender<ApiPressureLimitsMessage>,
 }
 

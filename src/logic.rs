@@ -69,6 +69,7 @@ pub struct LogicInputs {
     pub pressure_fullscale: i32,
     pub estop_active: bool,
     pub trigger_fan: bool,
+    pub trigger_sleep: bool,
     pub reset_fault: bool,
     pub pressure_limits: PressureLimits,
 }
@@ -101,6 +102,8 @@ pub struct Logic {
 
     t_info: timers::BaseTimer<bool>,
     t_emotion: timers::BaseTimer<Option<Emotion>>,
+
+    sleeping: bool,
 
     faulted: bool,
     reset_fault_last: bool,
@@ -167,9 +170,23 @@ impl Logic {
 
         if !self.t_emotion.timer(now, 1.millis()) {
             log::info!("New Emotion: {:?}", self.inp.emotion);
+            self.sleeping = false;
         }
 
+        if !self.sleeping && self.inp.trigger_sleep {
+            log::info!("Going to sleep.");
+        }
+        self.sleeping |= self.inp.trigger_sleep;
+
         match self.inp.emotion {
+            _ if self.sleeping => {
+                self.out.channels.eyes = false;
+                self.out.channels.pupil_down = true;
+                self.out.channels.pupil_top = false;
+                self.out.channels.mouth_top = false;
+                self.out.channels.mouth_mid = true;
+                self.out.channels.mouth_bottom = false;
+            }
             Some(Emotion::Happy) => {
                 self.out.channels.pupil_down = false;
                 self.out.channels.pupil_top = true;
@@ -214,12 +231,14 @@ impl Logic {
             d => d,
         };
 
-        if self.blink {
-            self.out.channels.pupil_top = false;
-            self.out.channels.pupil_down = true;
-        } else {
-            self.out.channels.pupil_top = true;
-            self.out.channels.pupil_down = false;
+        if !self.sleeping {
+            if self.blink {
+                self.out.channels.pupil_top = false;
+                self.out.channels.pupil_down = true;
+            } else {
+                self.out.channels.pupil_top = true;
+                self.out.channels.pupil_down = false;
+            }
         }
 
         self.close_mouth = match self.close_mouth {
@@ -229,7 +248,7 @@ impl Logic {
             d => d,
         };
 
-        if self.close_mouth {
+        if self.close_mouth && !self.sleeping {
             self.out.channels.mouth_top = false;
             self.out.channels.mouth_bottom = false;
             self.out.channels.mouth_mid = true;
