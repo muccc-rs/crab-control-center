@@ -97,6 +97,8 @@ pub struct Logic {
     close_mouth: bool,
     t_close_mouth: timers::BaseTimer<bool>,
 
+    t_highhigh_alarm: timers::TimerOn,
+
     t_fan: timers::BaseTimer<bool>,
     run_fan: bool,
 
@@ -271,9 +273,19 @@ impl Logic {
         );
 
         if let Some(pressure_mbar) = self.pressure_mbar {
+            // HIGHHIGH triggers after 500ms over limit
+            let high_high_alarm = self
+                .t_highhigh_alarm
+                .run(
+                    now,
+                    pressure_mbar >= self.inp.pressure_limits.high_high,
+                    500.millis(),
+                )
+                .done;
+
             // HIGHHIGH alarm is sticky and need to be cleared
-            self.pressure_high_high = (self.pressure_high_high && !reset_fault_edge)
-                || (pressure_mbar >= self.inp.pressure_limits.high_high);
+            self.pressure_high_high =
+                (self.pressure_high_high && !reset_fault_edge) || high_high_alarm;
 
             self.pressure_low_low = pressure_mbar <= self.inp.pressure_limits.low_low;
             self.pressure_low = pressure_mbar <= self.inp.pressure_limits.low;
