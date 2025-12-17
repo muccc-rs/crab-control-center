@@ -1,5 +1,6 @@
 use futures::StreamExt as _;
-use std::{pin::Pin, time::Duration};
+use juniper_axum::{extract::JuniperRequest, response::JuniperResponse};
+use std::{pin::Pin, sync::Arc, time::Duration};
 
 // Fallback values when no fieldbus connection is available
 cfg_if::cfg_if! {
@@ -210,6 +211,52 @@ impl juniper::GraphQLSubscriptionValue for Subscription {
             }),
         }
     }
+}
+
+async fn graphql(
+    axum::Extension(schema): axum::Extension<Arc<Schema>>,
+    axum::Extension(context): axum::Extension<Context>,
+    JuniperRequest(req): JuniperRequest,
+) -> JuniperResponse {
+    JuniperResponse(req.execute(&*schema, &context).await)
+}
+
+async fn graphql_subscriptions(
+    axum::Extension(schema): axum::Extension<Arc<Schema>>,
+    axum::Extension(context): axum::Extension<Context>,
+    ws: axum::extract::WebSocketUpgrade,
+) -> axum::response::Response {
+    ws.protocols(["graphql-transport-ws", "graphql-ws"])
+        .on_upgrade(move |socket| {
+            juniper_axum::subscriptions::serve_ws(
+                socket,
+                schema,
+                juniper_graphql_ws::ConnectionConfig {
+                    context,
+                    max_in_flight_operations: 0,
+                    keep_alive_interval: std::time::Duration::from_secs(15),
+                },
+            )
+        })
+}
+
+pub fn axum_router<S: Clone + Send + Sync + 'static>(
+    graphql_context: crate::graphql::Context,
+) -> axum::Router<S> {
+    use axum::routing::*;
+
+    axum::Router::new()
+        .route(
+            "/graphql",
+            on(MethodFilter::GET.or(MethodFilter::POST), graphql),
+        )
+        .route("/graphql-subscriptions", get(graphql_subscriptions))
+        .route(
+            "/graphiql",
+            get(juniper_axum::graphiql("/graphql", "/graphql-subscriptions")),
+        )
+        .layer(axum::Extension(Arc::new(schema())))
+        .layer(axum::Extension(graphql_context))
 }
 
 #[cfg(test)]

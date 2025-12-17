@@ -1,5 +1,3 @@
-use std::{fmt::Display, sync::Arc};
-
 use axum::{
     extract::State,
     http::StatusCode,
@@ -7,7 +5,6 @@ use axum::{
     routing::*,
     Json,
 };
-use juniper_axum::{extract::JuniperRequest, response::JuniperResponse};
 use utoipa::OpenApi;
 
 use crate::{
@@ -30,7 +27,7 @@ struct ApiEmotionMessage {
     emotion: logic::Emotion,
 }
 
-impl Display for ApiEmotionMessage {
+impl std::fmt::Display for ApiEmotionMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.emotion)
     }
@@ -238,33 +235,6 @@ async fn root(State(_): State<AppState>) -> impl IntoResponse {
     Html(include_str!("crab.html"))
 }
 
-async fn graphql(
-    axum::Extension(schema): axum::Extension<Arc<crate::graphql::Schema>>,
-    axum::Extension(context): axum::Extension<crate::graphql::Context>,
-    JuniperRequest(req): JuniperRequest,
-) -> JuniperResponse {
-    JuniperResponse(req.execute(&*schema, &context).await)
-}
-
-async fn graphql_subscriptions(
-    axum::Extension(schema): axum::Extension<Arc<crate::graphql::Schema>>,
-    axum::Extension(context): axum::Extension<crate::graphql::Context>,
-    ws: axum::extract::WebSocketUpgrade,
-) -> axum::response::Response {
-    ws.protocols(["graphql-transport-ws", "graphql-ws"])
-        .on_upgrade(move |socket| {
-            juniper_axum::subscriptions::serve_ws(
-                socket,
-                schema,
-                juniper_graphql_ws::ConnectionConfig {
-                    context,
-                    max_in_flight_operations: 0,
-                    keep_alive_interval: std::time::Duration::from_secs(15),
-                },
-            )
-        })
-}
-
 fn setup_metrics_recorder() -> metrics_exporter_prometheus::PrometheusHandle {
     let recorder_handle = metrics_exporter_prometheus::PrometheusBuilder::new()
         .install_recorder()
@@ -292,21 +262,9 @@ fn app() -> axum::Router<AppState> {
             .routes(utoipa_axum::routes!(post_crab_set_pressure_limits))
             .split_for_parts();
 
-    let router = router
-        .route(
-            "/graphql",
-            on(MethodFilter::GET.or(MethodFilter::POST), graphql),
-        )
-        .route("/graphql-subscriptions", get(graphql_subscriptions))
-        .route(
-            "/graphiql",
-            get(juniper_axum::graphiql("/graphql", "/graphql-subscriptions")),
-        )
-        .route("/", get(root))
-        .merge(
-            utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
-                .url("/api-docs/openapi.json", api.clone()),
-        );
+    let router = router.route("/", get(root)).merge(
+        utoipa_swagger_ui::SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api.clone()),
+    );
 
     let recorder_handle = setup_metrics_recorder();
     let router = router.route(
@@ -330,12 +288,9 @@ pub struct AppState {
 pub async fn run_http_server(
     state: AppState,
     emotionmanager: emotionmanager::EmotionManager,
-    graphql_context: crate::graphql::Context,
+    graphql_router: axum::Router<AppState>,
 ) {
-    let router = app()
-        .with_state(state)
-        .layer(axum::Extension(Arc::new(crate::graphql::schema())))
-        .layer(axum::Extension(graphql_context));
+    let router = app().merge(graphql_router).with_state(state);
     let listener = tokio::net::TcpListener::bind(BIND_ADDR).await.unwrap();
 
     let em = emotionmanager.run();
