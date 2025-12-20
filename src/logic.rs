@@ -1,19 +1,7 @@
 use crate::timers;
 use timers::TimeExt;
-use utoipa::ToSchema;
 
-/// All emotions a rustacean can feel
-#[derive(
-    Debug, Default, Clone, Copy, PartialEq, Eq, ToSchema, serde::Deserialize, juniper::GraphQLEnum,
-)]
-pub enum Emotion {
-    #[default]
-    Happy,
-    Sad,
-    Surprised,
-    Angered,
-    Neutral,
-}
+pub use crab_httpapi::emotionmanager::Emotion;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, juniper::GraphQLObject)]
 pub struct Channels {

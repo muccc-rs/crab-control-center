@@ -1,11 +1,30 @@
-use crate::logic;
+/// All emotions a rustacean can feel
+#[derive(
+    Debug,
+    Default,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    utoipa::ToSchema,
+    serde::Deserialize,
+    juniper::GraphQLEnum,
+)]
+pub enum Emotion {
+    #[default]
+    Happy,
+    Sad,
+    Surprised,
+    Angered,
+    Neutral,
+}
 
 type Responder<T> = tokio::sync::oneshot::Sender<T>;
 
 pub const EMOTION_RESET_TIMER_SECS: u64 = 60;
 
 #[derive(Default, Clone, Debug)]
-pub struct EmotionContainer(std::sync::Arc<tokio::sync::Mutex<logic::Emotion>>);
+pub struct EmotionContainer(std::sync::Arc<tokio::sync::Mutex<Emotion>>);
 
 #[allow(dead_code)]
 impl EmotionContainer {
@@ -13,19 +32,19 @@ impl EmotionContainer {
         Default::default()
     }
 
-    pub fn blocking_set(&mut self, emotion: logic::Emotion) {
+    pub fn blocking_set(&mut self, emotion: Emotion) {
         *self.0.blocking_lock() = emotion;
     }
 
-    pub async fn set(&mut self, emotion: logic::Emotion) {
+    pub async fn set(&mut self, emotion: Emotion) {
         *self.0.lock().await = emotion;
     }
 
-    pub fn blocking_get(&self) -> logic::Emotion {
+    pub fn blocking_get(&self) -> Emotion {
         *self.0.blocking_lock()
     }
 
-    pub async fn get(&self) -> logic::Emotion {
+    pub async fn get(&self) -> Emotion {
         *self.0.lock().await
     }
 }
@@ -34,10 +53,10 @@ impl EmotionContainer {
 #[allow(dead_code)]
 pub enum EmotionCommand {
     Get {
-        resp: Responder<logic::Emotion>,
+        resp: Responder<Emotion>,
     },
     Set {
-        emotion: logic::Emotion,
+        emotion: Emotion,
         resp: Responder<()>,
     },
 }
@@ -70,7 +89,7 @@ impl EmotionManager {
                         }
                     },
                     _ = tokio::time::sleep(std::time::Duration::from_secs(EMOTION_RESET_TIMER_SECS)) => {
-                        self.emotion.set(logic::Emotion::default()).await;
+                        self.emotion.set(Emotion::default()).await;
                     }
                 }
             }

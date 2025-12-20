@@ -1,10 +1,9 @@
+use crab_httpapi::emotionmanager;
 use emotionmanager::EmotionCommand;
 
-mod emotionmanager;
 #[cfg(feature = "fieldbus")]
 mod fieldbus;
 mod graphql;
-mod httpapi;
 mod logic;
 mod timers;
 #[cfg(feature = "visuals")]
@@ -24,7 +23,7 @@ fn main() {
     let graphql_context = graphql::Context::default();
 
     std::thread::spawn({
-        let app_state = httpapi::AppState {
+        let app_state = crab_httpapi::AppState {
             emotion_ch_tx: emotion_tx.clone(),
             fault_reset: fault_reset.clone(),
             trigger_fan: trigger_fan.clone(),
@@ -34,7 +33,7 @@ fn main() {
         let graphql_context = graphql_context.clone();
         move || {
             let graphql_router = graphql::axum_router(graphql_context);
-            httpapi::run_http_server(app_state, emotionmanager, graphql_router);
+            crab_httpapi::run_http_server(app_state, emotionmanager, graphql_router);
         }
     });
 
