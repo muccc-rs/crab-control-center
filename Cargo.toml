@@ -34,20 +34,23 @@ egui_extras = { version = "0.30.0", optional = true, features = [
     "image",
 ], default-features = false }
 
-axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
-tokio = { version = "1.42.0", features = ["rt", "parking_lot"] }
-juniper = { version = "0.16.1", features = ["schema-language"] }
-juniper_axum = { version = "0.2", features = ["subscriptions"] }
+tokio = { version = "1.42.0", features = ["rt", "parking_lot"]}
 cfg-if = "1.0.0"
-futures = { version = "0.3.31", default-features = false, features = ["std"] }
-juniper_graphql_ws = "0.4.0"
-tokio-stream = "0.1.17"
 metrics = { version = "0.24.3", default-features = false }
+
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"], optional = true }
+juniper = { version = "0.16.1", features = ["schema-language"], optional = true }
+juniper_axum = { version = "0.2", features = ["subscriptions"], optional = true }
+juniper_graphql_ws = { version = "0.4.0", optional = true }
+futures = { version = "0.3.31", default-features = false, features = ["std"], optional = true }
+tokio-stream = { version = "0.1.17", optional = true }
 
 [features]
 visuals = ["dep:eframe", "dep:egui", "dep:egui_extras"]
 fieldbus = ["dep:profirust"]
-default = ["visuals"]
+graphql = ["dep:juniper", "dep:juniper_axum", "dep:juniper_graphql_ws", "dep:axum", "dep:futures", "dep:tokio-stream"]
+
+default = ["visuals", "graphql"]
 
 [profile.dev]
 panic = "abort"

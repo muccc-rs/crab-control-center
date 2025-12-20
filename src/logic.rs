@@ -3,7 +3,8 @@ use timers::TimeExt;
 
 pub use crab_httpapi::emotionmanager::Emotion;
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, juniper::GraphQLObject)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "graphql", derive(juniper::GraphQLObject))]
 pub struct Channels {
     // Outline
     pub bottom_front: bool,
@@ -31,7 +32,8 @@ pub struct Channels {
     // pub left_leg_back: bool,
 }
 
-#[derive(Debug, Clone, juniper::GraphQLObject)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "graphql", derive(juniper::GraphQLObject))]
 pub struct PressureLimits {
     pub low_low: f64,
     pub low: f64,
@@ -50,7 +52,8 @@ impl Default for PressureLimits {
     }
 }
 
-#[derive(Debug, Default, Clone, juniper::GraphQLObject)]
+#[derive(Debug, Default, Clone)]
+#[cfg_attr(feature = "graphql", derive(juniper::GraphQLObject))]
 pub struct LogicInputs {
     pub emotion: Option<Emotion>,
     pub dc_ok: bool,
@@ -62,7 +65,8 @@ pub struct LogicInputs {
     pub pressure_limits: PressureLimits,
 }
 
-#[derive(Debug, Default, Clone, juniper::GraphQLObject)]
+#[derive(Debug, Default, Clone)]
+#[cfg_attr(feature = "graphql", derive(juniper::GraphQLObject))]
 pub struct LogicOutputs {
     pub channels: Channels,
     pub indicator_fault: bool,
@@ -70,13 +74,14 @@ pub struct LogicOutputs {
     pub run_fan: bool,
 }
 
-#[derive(Debug, Default, Clone, juniper::GraphQLObject)]
-#[graphql(name = "LogicState")]
-#[graphql(context = crate::graphql::Context)]
+#[derive(Debug, Default, Clone)]
+#[cfg_attr(feature = "graphql", derive(juniper::GraphQLObject))]
+#[cfg_attr(feature = "graphql", graphql(name = "LogicState"))]
+#[cfg_attr(feature = "graphql", graphql(context = crate::graphql::Context))]
 pub struct Logic {
-    #[graphql(ignore)]
+    #[cfg_attr(feature = "graphql", graphql(ignore))]
     inp: LogicInputs,
-    #[graphql(ignore)]
+    #[cfg_attr(feature = "graphql", graphql(ignore))]
     out: LogicOutputs,
 
     blink: bool,
@@ -110,7 +115,7 @@ pub struct Logic {
 
     logic_initialized: bool,
 
-    #[graphql(ignore)]
+    #[cfg_attr(feature = "graphql", graphql(ignore))]
     last_fan_start: Option<std::time::Instant>,
 }
 
@@ -119,6 +124,7 @@ impl Logic {
         Self::default()
     }
 
+    #[allow(dead_code)]
     pub fn inputs(&self) -> &LogicInputs {
         &self.inp
     }
