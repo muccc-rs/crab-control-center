@@ -1,16 +1,14 @@
 use axum::{
+    Json,
     extract::State,
     http::StatusCode,
     response::{Html, IntoResponse},
     routing::*,
-    Json,
 };
 use utoipa::OpenApi;
 
-use crate::{
-    emotionmanager,
-    logic::{self, Emotion},
-};
+pub mod emotionmanager;
+use emotionmanager::Emotion;
 
 const BIND_ADDR: &str = "0.0.0.0:8080";
 
@@ -24,7 +22,7 @@ struct ApiDoc;
 
 #[derive(Debug, utoipa::ToSchema, serde::Deserialize)]
 struct ApiEmotionMessage {
-    emotion: logic::Emotion,
+    emotion: Emotion,
 }
 
 impl std::fmt::Display for ApiEmotionMessage {

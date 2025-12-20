@@ -561,20 +561,36 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "cfg-if",
+ "crab-httpapi",
  "eframe",
  "egui",
  "egui_extras",
  "env_logger",
  "futures",
- "hex-literal",
  "juniper",
  "juniper_axum",
  "juniper_graphql_ws",
  "log",
  "metrics",
- "metrics-exporter-prometheus",
  "process-image",
  "profirust",
+ "tokio",
+ "tokio-stream",
+]
+
+[[package]]
+name = "crab-httpapi"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "cfg-if",
+ "futures",
+ "hex-literal",
+ "juniper",
+ "juniper_axum",
+ "juniper_graphql_ws",
+ "metrics",
+ "metrics-exporter-prometheus",
  "serde",
  "serde_json",
  "sha1",
