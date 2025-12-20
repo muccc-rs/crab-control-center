@@ -45,6 +45,7 @@ impl<T: PartialEq> BaseTimer<T> {
     }
 }
 
+#[cfg(feature = "graphql")]
 #[juniper::graphql_object(context = crate::graphql::Context)]
 #[graphql(name = "BaseTimer")]
 impl<T: PartialEq> BaseTimer<T> {
@@ -85,6 +86,7 @@ impl TimerOn {
     }
 }
 
+#[cfg(feature = "graphql")]
 #[juniper::graphql_object(context = crate::graphql::Context)]
 #[graphql(name = "TimerOn")]
 impl TimerOn {
@@ -112,6 +114,7 @@ impl TimerOff {
     }
 }
 
+#[cfg(feature = "graphql")]
 #[juniper::graphql_object(context = crate::graphql::Context)]
 #[graphql(name = "TimerOff")]
 impl TimerOff {
@@ -147,6 +150,7 @@ impl PulseTimer {
 }
 
 #[juniper::graphql_object(context = crate::graphql::Context)]
+#[cfg(feature = "graphql")]
 #[graphql(name = "PulseTimer")]
 impl PulseTimer {
     async fn time(&self, context: &crate::graphql::Context) -> Option<f64> {

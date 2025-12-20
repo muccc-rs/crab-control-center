@@ -3,6 +3,7 @@ use emotionmanager::EmotionCommand;
 
 #[cfg(feature = "fieldbus")]
 mod fieldbus;
+#[cfg(feature = "graphql")]
 mod graphql;
 mod logic;
 mod timers;
@@ -20,20 +21,29 @@ fn main() {
     let trigger_sleep = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let fault_reset = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
 
+    let app_state = crab_httpapi::AppState {
+        emotion_ch_tx: emotion_tx.clone(),
+        fault_reset: fault_reset.clone(),
+        trigger_fan: trigger_fan.clone(),
+        trigger_sleep: trigger_sleep.clone(),
+        pressure_limits_tx,
+    };
+
+    #[cfg(feature = "graphql")]
     let graphql_context = graphql::Context::default();
 
+    #[cfg(feature = "graphql")]
     std::thread::spawn({
-        let app_state = crab_httpapi::AppState {
-            emotion_ch_tx: emotion_tx.clone(),
-            fault_reset: fault_reset.clone(),
-            trigger_fan: trigger_fan.clone(),
-            trigger_sleep: trigger_sleep.clone(),
-            pressure_limits_tx,
-        };
         let graphql_context = graphql_context.clone();
         move || {
             let graphql_router = graphql::axum_router(graphql_context);
             crab_httpapi::run_http_server(app_state, emotionmanager, Some(graphql_router));
+        }
+    });
+    #[cfg(not(feature = "graphql"))]
+    std::thread::spawn({
+        move || {
+            crab_httpapi::run_http_server(app_state, emotionmanager, None);
         }
     });
 
@@ -69,6 +79,7 @@ fn main() {
 
                 #[cfg(feature = "fieldbus")]
                 if let Some(fieldbus) = &mut fieldbus {
+                    #[cfg(feature = "graphql")]
                     let mut graphql_context = graphql_context.inner.blocking_write();
 
                     fieldbus.with_process_images(|pii, piq| {
@@ -119,7 +130,9 @@ fn main() {
                         // -KEC1-K7 AI1
                         logic.inputs_mut().pressure_fullscale = tag!(pii, W, 2).into();
 
+                        #[cfg(feature = "graphql")]
                         graphql_context.pii.copy_from_slice(pii);
+                        #[cfg(feature = "graphql")]
                         graphql_context.piq.copy_from_slice(piq);
                     });
                 }
@@ -169,6 +182,7 @@ fn main() {
                 logic.run(now);
 
                 // Mirror the logic state into the graphql context so it can be queried remotely.
+                #[cfg(feature = "graphql")]
                 {
                     let mut graphql_context = graphql_context.inner.blocking_write();
 
