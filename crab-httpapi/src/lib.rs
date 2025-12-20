@@ -286,9 +286,14 @@ pub struct AppState {
 pub async fn run_http_server(
     state: AppState,
     emotionmanager: emotionmanager::EmotionManager,
-    graphql_router: axum::Router<AppState>,
+    graphql_router: Option<axum::Router<AppState>>,
 ) {
-    let router = app().merge(graphql_router).with_state(state);
+    let mut router = app();
+    if let Some(graphql_router) = graphql_router {
+        router = router.merge(graphql_router);
+    }
+    let router = router.with_state(state);
+
     let listener = tokio::net::TcpListener::bind(BIND_ADDR).await.unwrap();
 
     let em = emotionmanager.run();
