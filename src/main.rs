@@ -21,6 +21,8 @@ fn main() {
     let trigger_sleep = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let fault_reset = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
 
+    let (mut alert_tx, alert_rx) = tokio::sync::mpsc::channel(4);
+
     let app_state = crab_httpapi::AppState {
         emotion_ch_tx: emotion_tx.clone(),
         fault_reset: fault_reset.clone(),
@@ -37,13 +39,18 @@ fn main() {
         let graphql_context = graphql_context.clone();
         move || {
             let graphql_router = graphql::axum_router(graphql_context);
-            crab_httpapi::run_http_server(app_state, emotionmanager, Some(graphql_router));
+            crab_httpapi::run_http_server(
+                app_state,
+                emotionmanager,
+                Some(graphql_router),
+                Some(alert_rx),
+            );
         }
     });
     #[cfg(not(feature = "graphql"))]
     std::thread::spawn({
         move || {
-            crab_httpapi::run_http_server(app_state, emotionmanager, None);
+            crab_httpapi::run_http_server(app_state, emotionmanager, None, Some(alert_rx));
         }
     });
 
@@ -189,6 +196,8 @@ fn main() {
                     graphql_context.logic_image.clone_from(&logic);
                     graphql_context.now = now;
                 }
+
+                logic.submit_fault_alarm(now, &mut alert_tx);
 
                 std::thread::sleep(std::time::Duration::from_millis(50));
 

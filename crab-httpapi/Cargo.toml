@@ -24,3 +24,5 @@ sha1 = "0.10.6"
 hex-literal = "1.1.0"
 metrics = { version = "0.24.3", default-features = false }
 metrics-exporter-prometheus = { version = "0.18.1", default-features = false }
+reqwest = "0.12.26"
+log = "0.4.29"

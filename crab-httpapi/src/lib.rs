@@ -7,6 +7,7 @@ use axum::{
 };
 use utoipa::OpenApi;
 
+pub mod alert;
 pub mod emotionmanager;
 use emotionmanager::Emotion;
 
@@ -287,7 +288,12 @@ pub async fn run_http_server(
     state: AppState,
     emotionmanager: emotionmanager::EmotionManager,
     graphql_router: Option<axum::Router<AppState>>,
+    alert_receiver: Option<tokio::sync::mpsc::Receiver<crate::alert::Alert>>,
 ) {
+    if let Some(alert_receiver) = alert_receiver {
+        tokio::spawn(async move { crate::alert::handle_alerts(alert_receiver).await });
+    }
+
     let mut router = app();
     if let Some(graphql_router) = graphql_router {
         router = router.merge(graphql_router);
