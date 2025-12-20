@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies
-      run: sudo apt-get install -y libudev-dev
+      run: sudo apt-get update && sudo apt-get install -y libudev-dev
     - name: Check fieldbus
       run: cargo check --verbose --no-default-features --features fieldbus
     - name: Check visuals
