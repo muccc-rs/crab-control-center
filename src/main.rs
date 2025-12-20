@@ -147,7 +147,7 @@ fn main() {
                 {
                     // Some sane defaults when no actual hardware is present
                     logic.inputs_mut().dc_ok = true;
-                    logic.inputs_mut().estop_ok = false;
+                    logic.inputs_mut().estop_ok = true;
                     logic.inputs_mut().pressure_fullscale = 64;
                 }
 
