@@ -33,7 +33,7 @@ fn main() {
         let graphql_context = graphql_context.clone();
         move || {
             let graphql_router = graphql::axum_router(graphql_context);
-            crab_httpapi::run_http_server(app_state, emotionmanager, graphql_router);
+            crab_httpapi::run_http_server(app_state, emotionmanager, Some(graphql_router));
         }
     });
 
