@@ -115,7 +115,7 @@ fn main() {
                         // -KEC1-K6 DI1
                         logic.inputs_mut().dc_ok = tag!(pii, X, 1, 0);
                         // -KEC1-K6 DI2
-                        logic.inputs_mut().estop_active = tag!(pii, X, 1, 1);
+                        logic.inputs_mut().estop_ok = tag!(pii, X, 1, 1);
 
                         // -KEC1-K7 AI1
                         logic.inputs_mut().pressure_fullscale = tag!(pii, W, 2).into();
@@ -128,7 +128,7 @@ fn main() {
                 {
                     // Some sane defaults when no actual hardware is present
                     logic.inputs_mut().dc_ok = true;
-                    logic.inputs_mut().estop_active = false;
+                    logic.inputs_mut().estop_ok = false;
                     logic.inputs_mut().pressure_fullscale = 64;
                 }
 

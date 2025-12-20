@@ -67,7 +67,7 @@ pub struct LogicInputs {
     pub emotion: Option<Emotion>,
     pub dc_ok: bool,
     pub pressure_fullscale: i32,
-    pub estop_active: bool,
+    pub estop_ok: bool,
     pub trigger_fan: bool,
     pub trigger_sleep: bool,
     pub reset_fault: bool,
@@ -299,7 +299,7 @@ impl Logic {
             || pressure_fault
             || fan_overtime
             || self.pressure_high_high
-            || self.inp.estop_active
+            || !self.inp.estop_ok
             || !self.logic_initialized
             || !self.inp.dc_ok;
 
