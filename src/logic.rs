@@ -311,7 +311,7 @@ impl Logic {
 
         // Fan
         let fan_cooldown = !self.out.run_fan && self.t_fan.timer(now, 10.secs());
-        let crab_deflated = !self.out.run_fan && self.t_fan.timer(now, (30 * 60).secs());
+        let crab_deflated = !self.out.run_fan && self.t_fan.timer(now, (10 * 60).secs());
         let start_fan =
             ((self.pressure_low && crab_deflated) || self.inp.trigger_fan) && fan_cooldown;
         self.run_fan = (self.run_fan || start_fan) && !self.pressure_high;
