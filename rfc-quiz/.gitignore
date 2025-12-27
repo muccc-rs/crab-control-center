@@ -1,0 +1,6 @@
+# Clone the rust-lang/rfcs here
+rfcs
+# Put the generated pull-request list here
+rfcs.json
+# Output file generate with puzzle data (html, markdown, solution)
+puzzles.json

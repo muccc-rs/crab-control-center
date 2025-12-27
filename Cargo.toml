@@ -8,7 +8,7 @@ publish = false
 
 [workspace]
 members = [
-    "crab-httpapi/",
+    "crab-httpapi/", "rfc-quiz",
 ]
 
 [dependencies]
