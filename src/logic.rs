@@ -90,6 +90,9 @@ pub struct Logic {
     close_mouth: bool,
     t_close_mouth: timers::BaseTimer<bool>,
 
+    t_fault: timers::BaseTimer<bool>,
+    fault_submitted: bool,
+
     t_highhigh_alarm: timers::TimerOn,
 
     t_fan: timers::BaseTimer<bool>,
@@ -112,6 +115,9 @@ pub struct Logic {
     pressure_low: bool,
     pressure_high: bool,
     pressure_high_high: bool,
+
+    pressure_fault: bool,
+    fan_overtime: bool,
 
     logic_initialized: bool,
 
@@ -254,8 +260,8 @@ impl Logic {
         self.reset_fault_last = self.inp.reset_fault;
 
         // Disconnected pressure sensor
-        let pressure_fault = self.inp.pressure_fullscale & 7 != 0;
-        self.pressure_mbar = if !pressure_fault {
+        self.pressure_fault = self.inp.pressure_fullscale & 7 != 0;
+        self.pressure_mbar = if !self.pressure_fault {
             Some(f64::from(self.inp.pressure_fullscale) * 250. / 65535.)
         } else {
             None
@@ -287,11 +293,11 @@ impl Logic {
         }
 
         // Maximum fan runtime
-        let fan_overtime = self.out.run_fan && self.t_fan.timer(now, 60.secs());
+        self.fan_overtime = self.out.run_fan && self.t_fan.timer(now, 60.secs());
 
         self.faulted = (self.faulted && !reset_fault_edge)
-            || pressure_fault
-            || fan_overtime
+            || self.pressure_fault
+            || self.fan_overtime
             || self.pressure_high_high
             || !self.inp.estop_ok
             || !self.logic_initialized
@@ -305,7 +311,7 @@ impl Logic {
 
         // Fan
         let fan_cooldown = !self.out.run_fan && self.t_fan.timer(now, 10.secs());
-        let crab_deflated = !self.out.run_fan && self.t_fan.timer(now, (30 * 60).secs());
+        let crab_deflated = !self.out.run_fan && self.t_fan.timer(now, (10 * 60).secs());
         let start_fan =
             ((self.pressure_low && crab_deflated) || self.inp.trigger_fan) && fan_cooldown;
         self.run_fan = (self.run_fan || start_fan) && !self.pressure_high;
@@ -349,5 +355,49 @@ impl Logic {
         }
 
         self.logic_initialized = true;
+    }
+
+    pub fn submit_fault_alarm(
+        &mut self,
+        now: std::time::Instant,
+        alarm_tx: &mut tokio::sync::mpsc::Sender<crab_httpapi::alert::Alert>,
+    ) {
+        self.t_fault.run(now, self.faulted);
+        if self.faulted && !self.fault_submitted && self.t_fault.timer(now, 10.secs()) {
+            self.fault_submitted = true;
+
+            let mut conditions = Vec::new();
+            if self.pressure_fault {
+                conditions.push("PRESSURE READING INVALID");
+            }
+            if self.fan_overtime {
+                conditions.push("FAN RAN TOO LONG");
+            }
+            if self.pressure_high_high {
+                conditions.push("PRESSURE HIGH-HIGH LEVEL");
+            }
+            if !self.inp.estop_ok {
+                conditions.push("E-STOP ASSERTED");
+            }
+            if !self.inp.dc_ok {
+                conditions.push("5VDC SUPPLY FAILED");
+            }
+            if conditions.is_empty() {
+                conditions.push("NONE");
+            }
+
+            let message = format!(
+                "Crab entered fault state.\nActive Conditions: {}",
+                conditions.join(", ")
+            );
+
+            let res = alarm_tx.try_send(crab_httpapi::alert::Alert { message });
+            if let Err(_) = res {
+                log::error!("Fault alarm could not be queued! Ignoring.");
+            }
+        }
+        if !self.faulted {
+            self.fault_submitted = false;
+        }
     }
 }
