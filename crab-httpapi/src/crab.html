@@ -6,6 +6,7 @@
 </head>
 <body>
   <script>
+window.onload = () => {
   const submit = (clickEvent) => {
     const message = document.getElementById("feelings").value;
     fetch("/crab/talk", {
@@ -19,12 +20,79 @@
       }
     })
   }
+
+  let game = { key: null };
+
+  document.getElementById("make-rfc-puzzle").onclick = async function () {
+    const response = await fetch("/crab/rfc-game/new", {
+      method: 'POST',
+      headers: {
+        "Content-Type": 'application/json'
+      },
+      body: JSON.stringify({})
+    });
+
+    let { key } = await response.json();
+    document.getElementById("rfc-frame").src = `/crab/rfc-game/rfc/${key}`;
+    game.key = key;
+  }
+
+  document.getElementById("make-rfc-puzzle-merge").onclick = async function () {
+    if (!game.key) {
+      return;
+    }
+
+    const response = await fetch("/crab/rfc-game/solve", {
+      method: 'POST',
+      headers: {
+        "Content-Type": 'application/json'
+      },
+      body: JSON.stringify({ key: game.key, attempt: "Merge" })
+    });
+
+    game.key = null;
+    document.getElementById("rfc-frame").src = "about:blank";
+
+    let { success } = await response.json();
+    document.getElementById("make-rfc-success").innerText = success ? "Nice, you truly understand the Rust language spirit" : "Fail, polish your Rust skills";
+  }
+
+  document.getElementById("make-rfc-puzzle-close").onclick = async function () {
+    if (!game.key) {
+      return;
+    }
+
+    const response = await fetch("/crab/rfc-game/solve", {
+      method: 'POST',
+      headers: {
+        "Content-Type": 'application/json'
+      },
+      body: JSON.stringify({ key: game.key, attempt: "Closed" })
+    });
+
+    game.key = null;
+    document.getElementById("rfc-frame").src = "about:blank";
+
+    let { success } = await response.json();
+    document.getElementById("make-rfc-success").innerText = success ? "Nice, you truly understand the Rust language spirit" : "Fail, polish your Rust skills";
+  }
+}
   </script>
   <h1>Crab Emotion API</h1>
   <h2>Docs</h2>
   <p>
   <marquee>How does the crab feel?</marquee><input id="feelings"/> <button onclick="submit()">Submit</button>
   </p>
+
+  <h2>Ferris judges RFCs</h2>
+
+  <button id="make-rfc-puzzle">New RFC</button>
+  <label id="make-rfc-success"></label>
+
+  <iframe id="rfc-frame" width="100%" height="600px"></iframe>
+  <button id="make-rfc-puzzle-merge">Merge</button>
+  <button id="make-rfc-puzzle-close">Close</button>
+
   <ul>
     <li>
       <a href="/swagger-ui">Swagger</a>

@@ -9,6 +9,8 @@ use utoipa::OpenApi;
 
 pub mod emotionmanager;
 use emotionmanager::Emotion;
+mod puzzle;
+pub use puzzle::Puzzles;
 
 const BIND_ADDR: &str = "0.0.0.0:8080";
 
@@ -229,6 +231,103 @@ async fn post_crab_fault_reset(State(state): State<AppState>) -> impl IntoRespon
         .store(true, std::sync::atomic::Ordering::SeqCst)
 }
 
+#[derive(utoipa::ToSchema, serde::Deserialize)]
+pub struct RfcGameNewMessage {}
+
+#[derive(utoipa::ToSchema, serde::Serialize)]
+pub struct RfcGameNewResponse {
+    pub key: puzzle::PuzzleKey,
+}
+
+#[utoipa::path(post,
+    path = "/crab/rfc-game/new",
+    summary = "Create a new game session for the RFC game",
+    request_body = RfcGameNewMessage,
+    responses(
+        (status = 200, description = "Success!", body = RfcGameNewResponse),
+    ),
+)]
+async fn post_crab_rfc(
+    State(state): State<AppState>,
+    Json(RfcGameNewMessage {}): Json<RfcGameNewMessage>,
+) -> impl IntoResponse {
+    let timeout = std::time::Instant::now() + std::time::Duration::from_secs(300);
+    let key = state.puzzles.lock().unwrap().generate(timeout);
+    Json(RfcGameNewResponse { key })
+}
+
+/// This makes <iframe src="/crab/rfc-game/rfc/{key}"></iframe> work (so we don't open ourselves to
+/// XSS attacks by serving arbitrary HTML)
+#[utoipa::path(get,
+    path = "/crab/rfc-game/rfc/{key}",
+    summary = "Grab the rendered HTML of an RFC",
+    responses(
+        (status = OK, description = "Success", body = str, content_type = "text/html"),
+        (status = NOT_FOUND, description = "Bad game key", body = str, content_type = "text/html")
+    )
+)]
+async fn get_crab_rfc_html(
+    State(state): State<AppState>,
+    axum::extract::Path(key): axum::extract::Path<puzzle::PuzzleKey>,
+) -> impl IntoResponse {
+    let html = {
+        let puzzles = state.puzzles.lock().unwrap();
+        puzzles.get_html(&key).map(String::from)
+    };
+
+    if let Some(html) = html {
+        (axum::http::StatusCode::OK, axum::response::Html(html))
+    } else {
+        (
+            axum::http::StatusCode::NOT_FOUND,
+            axum::response::Html("Not Found".to_string()),
+        )
+    }
+}
+
+#[derive(utoipa::ToSchema, serde::Deserialize)]
+pub struct RfcGameAttemptMessage {
+    pub key: puzzle::PuzzleKey,
+    pub attempt: puzzle::Judgement,
+}
+
+#[derive(utoipa::ToSchema, serde::Serialize)]
+pub struct RfcGameSuccessResponse {
+    pub key: puzzle::PuzzleKey,
+    pub success: bool,
+    pub solution: Option<puzzle::Judgement>,
+}
+
+#[utoipa::path(post,
+    path = "/crab/rfc-game/solve",
+    summary = "Attempt to solve an RFC game session, ending it",
+    request_body = RfcGameAttemptMessage,
+    responses(
+        (status = 200, description = "Success!", body = RfcGameSuccessResponse),
+    ),
+)]
+async fn post_crab_rfc_solve(
+    State(state): State<AppState>,
+    Json(RfcGameAttemptMessage { key, attempt }): Json<RfcGameAttemptMessage>,
+) -> impl IntoResponse {
+    let (success, solution) = state.puzzles.lock().unwrap().solve(&key, attempt);
+
+    let emotion = success.then_some(Emotion::Happy).unwrap_or(Emotion::Sad);
+    let status = match send_emotion_to_crab(state.emotion_ch_tx.clone(), emotion).await {
+        Ok(status) => status,
+        Err(e) => e,
+    };
+
+    (
+        status,
+        Json(RfcGameSuccessResponse {
+            key,
+            success,
+            solution,
+        }),
+    )
+}
+
 async fn root(State(_): State<AppState>) -> impl IntoResponse {
     Html(include_str!("crab.html"))
 }
@@ -258,6 +357,9 @@ fn app() -> axum::Router<AppState> {
             .routes(utoipa_axum::routes!(post_crab_sleep))
             .routes(utoipa_axum::routes!(post_crab_fault_reset))
             .routes(utoipa_axum::routes!(post_crab_set_pressure_limits))
+            .routes(utoipa_axum::routes!(post_crab_rfc))
+            .routes(utoipa_axum::routes!(get_crab_rfc_html))
+            .routes(utoipa_axum::routes!(post_crab_rfc_solve))
             .split_for_parts();
 
     let router = router.route("/", get(root)).merge(
@@ -280,6 +382,7 @@ pub struct AppState {
     pub trigger_fan: std::sync::Arc<std::sync::atomic::AtomicBool>,
     pub trigger_sleep: std::sync::Arc<std::sync::atomic::AtomicBool>,
     pub pressure_limits_tx: tokio::sync::mpsc::Sender<ApiPressureLimitsMessage>,
+    pub puzzles: std::sync::Arc<std::sync::Mutex<puzzle::Puzzles>>,
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -292,11 +395,21 @@ pub async fn run_http_server(
     if let Some(graphql_router) = graphql_router {
         router = router.merge(graphql_router);
     }
+
+    let puzzle_reap = state.puzzles.clone();
     let router = router.with_state(state);
 
     let listener = tokio::net::TcpListener::bind(BIND_ADDR).await.unwrap();
 
     let em = emotionmanager.run();
+
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+            let now = tokio::time::Instant::now();
+            puzzle_reap.lock().unwrap().reap(now.into_std());
+        }
+    });
 
     axum::serve(listener, router).await.unwrap();
     em.await.unwrap();

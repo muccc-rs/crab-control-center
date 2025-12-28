@@ -11,6 +11,10 @@ mod timers;
 mod visuals;
 
 fn main() {
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .format_timestamp_micros()
+        .init();
+
     let (emotion_tx, emotion_rx) = tokio::sync::mpsc::channel::<EmotionCommand>(32);
     let (pressure_limits_tx, mut pressure_limits_rx) = tokio::sync::mpsc::channel(8);
 
@@ -27,6 +31,7 @@ fn main() {
         trigger_fan: trigger_fan.clone(),
         trigger_sleep: trigger_sleep.clone(),
         pressure_limits_tx,
+        puzzles: std::sync::Arc::new(crab_httpapi::Puzzles::new().into()),
     };
 
     #[cfg(feature = "graphql")]
@@ -46,10 +51,6 @@ fn main() {
             crab_httpapi::run_http_server(app_state, emotionmanager, None);
         }
     });
-
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-        .format_timestamp_micros()
-        .init();
 
     #[cfg(feature = "fieldbus")]
     let mut fieldbus = if std::env::var("FAKE_CRAB")
